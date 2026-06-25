@@ -1,4 +1,12 @@
-// دالة المزامنة (تستخدم في اليدوي والآلي)
+// قائمة الكلمات المفتاحية للفلترة (يمكنك تعديلها)
+const KEYWORDS = [
+    "developer", "frontend", "backend", "fullstack", "software", "python", "javascript", 
+    "react", "node", "ai", "machine learning", "data", "devops", "mobile", 
+    "ui/ux", "graphic", "product designer", "video", "motion", "writer", 
+    "seo", "marketing", "manager", "remote"
+];
+
+// دالة المزامنة والفلترة
 async function syncJobs(env) {
     const apiKey = env.API_KEY;
     if (!apiKey) throw new Error("API_KEY is missing");
@@ -15,30 +23,36 @@ async function syncJobs(env) {
     
     let count = 0;
     for (const job of jobs) {
-        const title = job.title || job.job_title || "Remote Position";
+        // تجهيز البيانات
+        const title = (job.title || job.job_title || "Remote Position").toLowerCase();
         const company = job.company || job.company_name || "Confidential Company";
         const location = job.location || "Remote";
         const urlLink = job.url || job.job_url || "#";
-        const description = job.description || "";
+        const description = job.description || "No description provided.";
 
-        // استخدام env.DB كما هو مضبوط في إعداداتك
-        const result = await env.DB.prepare(`
-            INSERT INTO jobs (title, company, location, url, description) 
-            SELECT ?, ?, ?, ?, ?
-            WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE url = ?)
-        `).bind(title, company, location, urlLink, description, urlLink).run();
-        
-        if (result.success) count++;
+        // الفلترة: هل العنوان يحتوي على إحدى الكلمات المفتاحية؟
+        const isRelevant = KEYWORDS.some(keyword => title.includes(keyword));
+
+        if (isRelevant) {
+            // حفظ في قاعدة البيانات (تجنب التكرار باستخدام الرابط)
+            const result = await env.DB.prepare(`
+                INSERT INTO jobs (title, company, location, url, description) 
+                SELECT ?, ?, ?, ?, ?
+                WHERE NOT EXISTS (SELECT 1 FROM jobs WHERE url = ?)
+            `).bind(title, company, location, urlLink, description, urlLink).run();
+            
+            if (result.success) count++;
+        }
     }
     return count;
 }
 
 export default {
-    // 1. معالجة الطلبات عبر المتصفح (للزر اليدوي)
+    // 1. التعامل مع الطلبات عبر المتصفح (الزر اليدوي)
     async fetch(request, env) {
         const url = new URL(request.url);
 
-        // جلب قائمة الوظائف
+        // API لجلب الوظائف المحفوظة
         if (url.pathname === "/api/jobs") {
             const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC").all();
             return new Response(JSON.stringify(results), { 
@@ -46,7 +60,7 @@ export default {
             });
         }
 
-        // المزامنة اليدوية
+        // API للمزامنة اليدوية
         if (url.pathname === "/api/sync") {
             try {
                 const count = await syncJobs(env);
@@ -58,13 +72,13 @@ export default {
             }
         }
 
-        // واجهة بسيطة
-        return new Response(`<h1>JobNova is Running</h1><p>Automatic Sync: Hourly</p>`, { 
+        // الصفحة الرئيسية
+        return new Response(`<h1>JobNova is Running</h1><p>Automatic Sync: Hourly</p><p>Status: All systems go!</p>`, { 
             headers: { "Content-Type": "text/html" } 
         });
     },
 
-    // 2. معالجة المزامنة التلقائية (تنفذ كل ساعة بفضل الـ Cron Trigger)
+    // 2. معالجة المزامنة التلقائية (Cron Trigger)
     async scheduled(event, env, ctx) {
         console.log("Cron triggered sync...");
         ctx.waitUntil(syncJobs(env));
