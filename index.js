@@ -10,10 +10,12 @@ async function ensureTable(env) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS subscribers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE, keywords TEXT,
+      email TEXT UNIQUE,
+      keywords TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
@@ -23,29 +25,41 @@ async function syncJobs(env) {
   await ensureTable(env);
   const queries = ["developer","designer","marketing","data","devops","writer","manager"];
   let inserted = 0, skipped = 0, errors = [];
+
   for (const q of queries) {
     const apiUrl = `https://api.jobdatalake.com/v1/jobs?q=${q}&per_page=100`;
     let response;
-    try { response = await fetch(apiUrl, { headers: { "X-API-Key": env.API_KEY } }); }
-    catch(e) { errors.push(`Fetch "${q}": ${e.message}`); continue; }
+    try {
+      response = await fetch(apiUrl, { headers: { "X-API-Key": env.API_KEY } });
+    } catch(e) { errors.push(`Fetch "${q}": ${e.message}`); continue; }
     if (!response.ok) { errors.push(`API ${response.status} for "${q}"`); continue; }
+
     const data = await response.json();
     const jobs = data.jobs || data.hits || data.results || (Array.isArray(data) ? data : []);
+
     for (const job of jobs) {
       const jobUrl = job.url || "";
       if (!jobUrl) { skipped++; continue; }
-      const salary = job.salary_min_usd && job.salary_max_usd ? `$${job.salary_min_usd}k - $${job.salary_max_usd}k` : "";
-      const location = Array.isArray(job.locations) && job.locations.length ? job.locations[0] : (job.remote_type === "fully_remote" ? "Remote" : "");
+      const salary = job.salary_min_usd && job.salary_max_usd
+        ? `$${job.salary_min_usd}k - $${job.salary_max_usd}k` : "";
+      const location = Array.isArray(job.locations) && job.locations.length
+        ? job.locations[0] : (job.remote_type === "fully_remote" ? "Remote" : "");
       try {
         const r = await env.DB.prepare(
-          `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
+          `INSERT OR IGNORE INTO jobs
+           (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
            VALUES (?,?,?,?,?,?,?,?,?,?,?)`
         ).bind(
-          job.title||"Unknown", job.company_name||"Company", location, jobUrl,
-          job.description||"", salary, job.remote_type||"",
+          job.title||"Unknown",
+          job.company_name||"Company",
+          location, jobUrl,
+          job.description||"",
+          salary,
+          job.remote_type||"",
           JSON.stringify(job.required_skills||[]),
           Array.isArray(job.seniority)?job.seniority.join(", "):"",
-          job.employment_type||"", job.job_handle||""
+          job.employment_type||"",
+          job.job_handle||""
         ).run();
         if (r.meta?.changes > 0) inserted++; else skipped++;
       } catch(e) { errors.push(`DB: ${e.message.slice(0,60)}`); }
@@ -55,31 +69,81 @@ async function syncJobs(env) {
 }
 
 const BLOG_POSTS = [
-  { id:1, cat:"Career Advice", title:"10 Skills Every Remote Developer Must Have in 2026", excerpt:"Remote work has changed what employers look for. Beyond technical skills, these soft skills separate top candidates from the rest.", date:"June 20, 2026", readTime:"5 min read",
-    body:`<p>The remote job market in 2026 is more competitive than ever.</p><h2>1. Asynchronous Communication</h2><p>Remote teams operate across time zones. The ability to write clear, concise messages is as important as coding ability.</p><h2>2. Self-Management & Discipline</h2><p>Without a manager physically present, you need strong self-management. Tools like Notion and Linear are your best friends.</p><h2>3. Deep Work Focus</h2><p>Top remote developers cultivate 2-4 hour blocks of uninterrupted deep work.</p><h2>4. Proactive Visibility</h2><p>Remote workers must proactively share their progress and flag blockers early.</p><h2>5. Cloud & DevOps Literacy</h2><p>Even frontend developers benefit from understanding Docker and CI/CD pipelines.</p><h2>6. Strong Git Practices</h2><p>Clean commit history and descriptive PR descriptions are critical when your team never meets in person.</p><h2>7. Time Zone Awareness</h2><p>Always specify time zones when scheduling. Use UTC as your mental anchor.</p><h2>8. Written Documentation</h2><p>Remote teams live and die by their documentation.</p><h2>9. Video Communication Presence</h2><p>Good lighting and a decent microphone make a bigger impression than you might expect.</p><h2>10. Continuous Learning Mindset</h2><p>Developers who embrace new tools stay ahead of the curve.</p>`
+  {
+    id:1, cat:"Career Advice",
+    title:"10 Skills Every Remote Developer Must Have in 2026",
+    excerpt:"Remote work has changed what employers look for. Beyond technical skills, these soft skills separate top candidates from the rest.",
+    date:"June 20, 2026", readTime:"5 min read",
+    body:`<p>The remote job market in 2026 is more competitive than ever. With thousands of developers applying for the same roles, it's no longer enough to be technically skilled — you need to master the full stack of remote work competencies.</p>
+      <h2>1. Asynchronous Communication</h2><p>Remote teams operate across time zones. The ability to write clear, concise, and actionable messages is as important as coding ability.</p>
+      <h2>2. Self-Management & Discipline</h2><p>Without a manager physically present, you need strong self-management. Tools like Notion, Linear, and time-boxing techniques are your best friends.</p>
+      <h2>3. Deep Work Focus</h2><p>Top remote developers cultivate the ability to enter deep focus states — 2-4 hour blocks of uninterrupted work.</p>
+      <h2>4. Proactive Visibility</h2><p>Remote workers must proactively share their progress, flag blockers early, and contribute visibly to team channels.</p>
+      <h2>5. Cloud & DevOps Literacy</h2><p>Even frontend developers benefit from understanding Docker, CI/CD pipelines, and cloud deployment.</p>
+      <h2>6. Strong Git Practices</h2><p>Clean commit history, descriptive PR descriptions, and code review etiquette are critical when your team never meets in person.</p>
+      <h2>7. Time Zone Awareness</h2><p>Always specify time zones when scheduling. Use UTC as your mental anchor.</p>
+      <h2>8. Written Documentation</h2><p>Remote teams live and die by their documentation. Contributing to wikis and keeping READMEs updated is a valued skill.</p>
+      <h2>9. Video Communication Presence</h2><p>Good lighting, a decent microphone, and the ability to present your work clearly on a call are increasingly important.</p>
+      <h2>10. Continuous Learning Mindset</h2><p>Developers who embrace new tools — AI coding assistants, new frameworks, collaboration software — stay ahead of the curve.</p>`
   },
-  { id:2, cat:"Salary Guide", title:"Remote Developer Salaries in 2026: What You Should Be Earning", excerpt:"Salary data from 600+ remote job listings reveals what companies are actually paying.", date:"June 18, 2026", readTime:"7 min read",
-    body:`<p>Based on our analysis of 600+ active remote job listings, here's what the market is paying in 2026.</p><h2>Frontend Developer</h2><ul><li><strong>Junior:</strong> $55k – $85k</li><li><strong>Mid-level:</strong> $85k – $130k</li><li><strong>Senior:</strong> $130k – $200k</li></ul><h2>Backend Developer</h2><ul><li><strong>Junior:</strong> $60k – $90k</li><li><strong>Mid-level:</strong> $90k – $145k</li><li><strong>Senior:</strong> $145k – $220k</li></ul><h2>Data Scientist / ML Engineer</h2><ul><li><strong>Mid-level:</strong> $100k – $160k</li><li><strong>Senior:</strong> $160k – $240k</li></ul><h2>Negotiation Tips</h2><p>Always negotiate. The first offer is rarely the best offer.</p>`
+  {
+    id:2, cat:"Salary Guide",
+    title:"Remote Developer Salaries in 2026: What You Should Be Earning",
+    excerpt:"Salary data from 600+ remote job listings reveals what companies are actually paying — broken down by role, seniority, and region.",
+    date:"June 18, 2026", readTime:"7 min read",
+    body:`<p>Based on our analysis of 600+ active remote job listings, here's what the market is paying in 2026.</p>
+      <h2>Frontend Developer</h2><ul><li><strong>Junior:</strong> $55k – $85k</li><li><strong>Mid-level:</strong> $85k – $130k</li><li><strong>Senior:</strong> $130k – $200k</li><li><strong>Staff:</strong> $180k – $280k+</li></ul>
+      <h2>Backend Developer</h2><ul><li><strong>Junior:</strong> $60k – $90k</li><li><strong>Mid-level:</strong> $90k – $145k</li><li><strong>Senior:</strong> $145k – $220k</li></ul>
+      <h2>Data Scientist / ML Engineer</h2><ul><li><strong>Junior:</strong> $70k – $100k</li><li><strong>Mid-level:</strong> $100k – $160k</li><li><strong>Senior:</strong> $160k – $240k</li></ul>
+      <h2>DevOps / Platform Engineer</h2><ul><li><strong>Mid-level:</strong> $100k – $155k</li><li><strong>Senior:</strong> $155k – $230k</li></ul>
+      <h2>Negotiation Tips</h2><p>Always negotiate. The first offer is rarely the best offer. Equity, signing bonuses, and learning stipends can add significant value beyond base salary.</p>`
   },
-  { id:3, cat:"Job Search", title:"How to Land a Remote Job in 30 Days", excerpt:"A step-by-step system that has helped thousands of developers secure remote offers.", date:"June 15, 2026", readTime:"9 min read",
-    body:`<p>This playbook breaks landing a remote job into a focused 30-day system.</p><h2>Week 1: Foundation</h2><p>Define your target role. Polish your resume — one page, quantify everything.</p><h2>Week 2: Volume with Quality</h2><p>Apply to 5-10 jobs per day with personalized applications.</p><h2>Week 3: Parallel Tracks</h2><p>Work on your portfolio while applications are processing.</p><h2>Week 4: Interview Preparation</h2><p>Prepare for behavioral questions (STAR method), system design, and live coding.</p><h2>The Numbers Game</h2><p>Expect: 100 applications → 15 phone screens → 5 technical rounds → 2 offers. Apply every day without fail.</p>`
+  {
+    id:3, cat:"Job Search",
+    title:"How to Land a Remote Job in 30 Days: A Practical Playbook",
+    excerpt:"A step-by-step system that has helped thousands of developers secure remote offers — without connections or a fancy resume.",
+    date:"June 15, 2026", readTime:"9 min read",
+    body:`<p>Landing a remote job feels overwhelming. This playbook breaks it down into a focused 30-day system.</p>
+      <h2>Week 1: Foundation</h2><p>Define your target role. Polish your resume — one page, quantify everything. Build a tracking spreadsheet.</p>
+      <h2>Week 2: Volume with Quality</h2><p>Apply to 5-10 jobs per day with personalized applications. Early applications (within 24 hours) have significantly higher response rates.</p>
+      <h2>Week 3: Parallel Tracks</h2><p>Work on your portfolio while applications are processing. One impressive deployed project beats five mediocre ones.</p>
+      <h2>Week 4: Interview Preparation</h2><p>Prepare for behavioral questions (STAR method), system design basics, and live coding. For remote interviews, test your setup the night before.</p>
+      <h2>The Numbers Game</h2><p>Expect roughly: 100 applications → 15 phone screens → 5 technical rounds → 2 offers. Apply every day without fail.</p>`
   },
-  { id:4, cat:"Industry Trends", title:"The State of Remote Work in 2026: What's Changed", excerpt:"Remote work has matured. The hype is gone, but the opportunity is bigger than ever.", date:"June 10, 2026", readTime:"6 min read",
-    body:`<p>Remote work has reached equilibrium in 2026.</p><h2>What's Changed Since 2024</h2><p>Fully remote roles have stabilized at 30-35% of white-collar job postings. Hybrid is the default for large companies.</p><h2>Who's Hiring Remote in 2026</h2><p>Companies that were remote-first before 2020 have doubled down — Shopify, GitLab, Automattic, and hundreds of SaaS companies.</p><h2>AI's Impact</h2><p>"AI integration" and "LLM fine-tuning" appear in a growing percentage of job listings.</p>`
+  {
+    id:4, cat:"Industry Trends",
+    title:"The State of Remote Work in 2026: What's Changed",
+    excerpt:"Remote work has matured. The hype is gone, but the opportunity is bigger than ever — for those who know where to look.",
+    date:"June 10, 2026", readTime:"6 min read",
+    body:`<p>Remote work has reached equilibrium in 2026. Here's what the data tells us.</p>
+      <h2>What's Changed Since 2024</h2><p>Fully remote roles have stabilized at 30-35% of white-collar job postings. Hybrid is the default for large companies; fully remote is the default for tech startups.</p>
+      <h2>Who's Hiring Remote in 2026</h2><p>Companies that were remote-first before 2020 have doubled down. Shopify, GitLab, Automattic, and hundreds of SaaS companies continue to hire globally.</p>
+      <h2>AI's Impact on Remote Job Descriptions</h2><p>"AI integration," "LLM fine-tuning," and "prompt engineering" appear in a growing percentage of software job listings.</p>
+      <h2>What to Expect in the Next 12 Months</h2><p>Continued growth in async-first companies and increasing demand for developers proficient with AI tools.</p>`
   },
-  { id:5, cat:"Tools & Productivity", title:"The Remote Developer's Essential Toolkit for 2026", excerpt:"The apps, workflows, and hardware setups that top remote developers swear by.", date:"June 5, 2026", readTime:"5 min read",
-    body:`<p>The right tools make remote work easier and make you look more professional.</p><h2>Communication</h2><ul><li><strong>Slack / Discord:</strong> Async team chat</li><li><strong>Loom:</strong> Quick video explanations</li><li><strong>Notion:</strong> Documentation</li></ul><h2>Development</h2><ul><li><strong>GitHub Copilot / Cursor:</strong> AI pair programming</li><li><strong>Linear:</strong> Project management</li><li><strong>Cloudflare Workers:</strong> Zero-ops deployment</li></ul><h2>Focus</h2><ul><li><strong>Raycast:</strong> Power launcher</li><li><strong>Cold Turkey:</strong> Website blocker for deep work</li></ul>`
+  {
+    id:5, cat:"Tools & Productivity",
+    title:"The Remote Developer's Essential Toolkit for 2026",
+    excerpt:"The apps, workflows, and hardware setups that top remote developers swear by.",
+    date:"June 5, 2026", readTime:"5 min read",
+    body:`<p>The right tools make remote work easier and make you look more professional.</p>
+      <h2>Communication</h2><ul><li><strong>Slack / Discord:</strong> Async team chat</li><li><strong>Loom:</strong> Record quick video explanations</li><li><strong>Notion:</strong> Documentation</li></ul>
+      <h2>Development</h2><ul><li><strong>GitHub Copilot / Cursor:</strong> AI pair programming</li><li><strong>Linear:</strong> Replaced Jira at most startups</li><li><strong>Cloudflare Workers:</strong> Zero-ops deployment</li></ul>
+      <h2>Focus & Productivity</h2><ul><li><strong>Raycast:</strong> Launcher that replaces dozens of apps</li><li><strong>Cold Turkey:</strong> Website blocker for deep work</li></ul>
+      <h2>The One Tool Most People Underuse</h2><p>A dedicated work browser profile with only work-related extensions. The psychological separation helps maintain work/life boundaries.</p>`
   },
-  { id:6, cat:"Interview Prep", title:"Remote Technical Interviews: What's Different and How to Prepare", excerpt:"Remote interviews have their own unique challenges. Here's how to ace them.", date:"June 1, 2026", readTime:"6 min read",
-    body:`<p>Companies screen for additional signals beyond pure coding ability for remote roles.</p><h2>The Setup Check</h2><p>Test your camera, mic, internet backup, and coding environment the evening before.</p><h2>Communicating While You Code</h2><p>Narrate your thinking continuously. "I'm considering using a hash map here because..." beats silence.</p><h2>Remote-Specific Questions</h2><ul><li>"How do you handle a blocker when your team lead is in a different time zone?"</li><li>"How do you stay productive working from home?"</li><li>"Tell me about a time you communicated a complex technical decision in writing."</li></ul><h2>Closing the Interview</h2><p>Ask: "Is the team primarily async or do you have set meeting times?"</p>`
+  {
+    id:6, cat:"Interview Prep",
+    title:"Remote Technical Interviews: What's Different and How to Prepare",
+    excerpt:"Remote interviews have their own unique challenges and opportunities. Here's how to ace them.",
+    date:"June 1, 2026", readTime:"6 min read",
+    body:`<p>Technical interviews have evolved for remote positions. Companies look for additional signals beyond pure coding ability.</p>
+      <h2>The Setup Check</h2><p>Do a full tech check the evening before: camera, mic, internet backup, and the coding environment they'll use.</p>
+      <h2>Communicating While You Code</h2><p>Narrate your thinking continuously — more than feels natural. "I'm considering using a hash map here because..." beats silence.</p>
+      <h2>Questions They Ask Remote Candidates</h2><ul><li>"How do you handle a blocker when your team lead is in a different time zone?"</li><li>"How do you stay productive when working from home?"</li><li>"Tell me about a time you communicated a complex technical decision in writing."</li></ul>
+      <h2>Closing the Interview</h2><p>Ask about the team's communication culture: "Is the team primarily async or do you have set meeting times?"</p>`
   }
 ];
-
-const AD1 = `<script async="async" data-cfasync="false" src="https://pl29900952.effectivecpmnetwork.com/240c21d3732d67f320e55d7618105288/invoke.js"><\/script><div id="container-240c21d3732d67f320e55d7618105288"></div>`;
-
-const AD2 = `<script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':250,'width':300,'params':{}};<\/script><script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"><\/script>`;
-
-const AD3 = `<script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};<\/script><script src="https://www.highperformanceformat.com/f9df5bf8e15c630ee01718f64c6edfb3/invoke.js"><\/script>`;
 
 const HTML_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -143,15 +207,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .stat-label{font-size:12px;color:var(--t3)}
 .stat-val{font-size:14px;font-weight:700;color:var(--accent-l)}
 .footer-links{display:flex;flex-direction:column;gap:4px}
-.footer-link{font-size:12px;color:var(--t3);padding:4px 0;transition:color .2s;cursor:pointer;background:none;border:none;font-family:inherit;text-align:left}
+.footer-link{font-size:12px;color:var(--t3);text-decoration:none;padding:4px 0;transition:color .2s;cursor:pointer;background:none;border:none;font-family:inherit;text-align:left}
 .footer-link:hover{color:var(--t2)}
-
-/* AD BLOCKS */
-.ad-block{display:flex;justify-content:center;align-items:center;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.ad-block-banner{display:flex;justify-content:center;padding:10px 0;background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden}
-.ad-label{font-size:10px;color:var(--t3);text-align:center;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
-.ad-sidebar{padding:12px 0}
-.ad-between{margin:16px 0}
 
 /* MAIN */
 .main{flex:1;min-width:0}
@@ -175,10 +232,10 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .chip:hover{border-color:var(--accent-l);color:var(--accent-l)}
 .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
-/* ADV FILTERS */
+/* ADVANCED FILTERS */
 .adv-filters{padding:14px 40px;border-bottom:1px solid var(--border);display:none;gap:12px;flex-wrap:wrap;background:var(--bg);align-items:flex-end}
 .adv-filters.open{display:flex}
-.filter-select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--t2);font-size:13px;font-family:inherit;cursor:pointer;outline:none}
+.filter-select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--t2);font-size:13px;font-family:inherit;cursor:pointer;outline:none;transition:border-color .2s}
 .filter-select:focus{border-color:var(--accent)}
 .filter-label{font-size:12px;color:var(--t3);display:flex;flex-direction:column;gap:4px}
 .salary-input{width:100px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--t1);font-size:13px;font-family:inherit;outline:none}
@@ -201,7 +258,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .job-card:hover{border-color:var(--border-h);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .job-card:hover::before{opacity:1}
 .card-top{display:flex;align-items:flex-start;gap:16px;position:relative}
-.co-logo{width:48px;height:48px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.co-logo{width:48px;height:48px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0;text-transform:uppercase}
+.co-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
 .job-info{flex:1;min-width:0}
 .job-title{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:4px;line-height:1.3}
 .job-co{font-size:14px;color:var(--accent-l);font-weight:600;margin-bottom:10px;cursor:pointer;display:inline-block;background:none;border:none;font-family:inherit;padding:0}
@@ -227,6 +285,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;color:var(--t1);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
+.toast-icon{font-size:16px}
 
 /* EMPTY / LOADER */
 .empty{text-align:center;padding:80px 20px;color:var(--t3)}
@@ -251,7 +310,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .detail-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden}
 .detail-hdr{padding:32px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(37,99,235,.05),transparent)}
 .detail-co-row{display:flex;align-items:center;gap:16px;margin-bottom:20px}
-.detail-logo{width:64px;height:64px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.detail-logo{width:64px;height:64px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0}
+.detail-logo img{width:100%;height:100%;object-fit:contain;padding:8px}
 .detail-co-name{font-size:16px;font-weight:600;color:var(--accent-l);cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
 .detail-co-name:hover{text-decoration:underline}
 .detail-co-loc{font-size:13px;color:var(--t3)}
@@ -273,7 +333,8 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .company-wrap{padding:32px 40px;max-width:800px}
 .company-hdr{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:32px;margin-bottom:24px}
 .company-hdr-top{display:flex;align-items:center;gap:20px;margin-bottom:16px}
-.company-big-logo{width:80px;height:80px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.company-big-logo{width:80px;height:80px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0}
+.company-big-logo img{width:100%;height:100%;object-fit:contain;padding:10px}
 .company-name{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
 .company-stat{font-size:14px;color:var(--t2)}
 .company-stat strong{color:var(--t1);font-weight:700}
@@ -331,20 +392,22 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .static-wrap ul li{font-size:15px;color:var(--t2);line-height:1.8;margin-bottom:6px}
 .static-wrap a{color:var(--accent-l)}
 
-/* THEME BTN */
+/* THEME TOGGLE */
 .theme-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
 .theme-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
 
 /* LIGHT MODE */
 body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F172A;--t2:#475569;--t3:#94A3B8}
 
-/* MOBILE */
+/* MOBILE HEADER */
 .mob-hdr{display:none;padding:14px 20px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;position:sticky;top:37px;z-index:50;gap:12px}
 .mob-logo{font-size:20px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#3B82F6,#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .mob-btns{display:flex;gap:8px}
+
+/* MOBILE DRAWER */
 .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;backdrop-filter:blur(2px)}
 .drawer-overlay.open{display:block}
-.mob-drawer{position:fixed;top:0;left:-290px;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:201;transition:left .3s ease;overflow-y:auto;padding:24px 16px;display:flex;flex-direction:column;gap:20px}
+.mob-drawer{position:fixed;top:0;left:-290px;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:201;transition:left .3s ease;overflow-y:auto;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
 .mob-drawer.open{left:0}
 .drawer-close{position:absolute;top:16px;right:16px;background:none;border:1px solid var(--border);color:var(--t2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
 
@@ -363,7 +426,6 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
   .job-right{align-items:flex-start}
   .detail-actions{flex-direction:column}
   .apply-btn,.share-detail-btn{width:100%;justify-content:center}
-  .ad-block{padding:10px}
 }
 </style>
 </head>
@@ -397,19 +459,12 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
     <button class="nav-btn" onclick="goView('blog');closeDrawer()"><span class="nav-icon">📝</span>Career Blog</button>
     <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="drawerThemeIcon">🌙</span>Dark / Light</button>
   </div>
-  <!-- AD IN DRAWER -->
-  <div class="ad-sidebar">
-    <div class="ad-label">Advertisement</div>
-    <div class="ad-block" style="padding:8px">
-      ${AD3}
-    </div>
-  </div>
   <div style="margin-top:auto">
     <div class="s-title">Legal</div>
     <button class="footer-link" onclick="showStatic('privacy');closeDrawer()">Privacy Policy</button>
     <button class="footer-link" onclick="showStatic('terms');closeDrawer()">Terms of Service</button>
     <button class="footer-link" onclick="showStatic('disclaimer');closeDrawer()">Disclaimer</button>
-    <div style="margin-top:14px;font-size:11px;color:var(--t3)">© 2026 JobNova</div>
+    <div style="margin-top:16px;font-size:11px;color:var(--t3)">© 2026 JobNova</div>
   </div>
 </div>
 
@@ -470,13 +525,6 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       <button class="nav-btn" onclick="goView('blog')"><span class="nav-icon">📝</span>Career Blog</button>
       <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="themeNavIcon">🌙</span>Dark / Light</button>
     </div>
-    <!-- AD IN SIDEBAR -->
-    <div class="ad-sidebar">
-      <div class="ad-label">Advertisement</div>
-      <div class="ad-block">
-        ${AD2}
-      </div>
-    </div>
     <div>
       <div class="s-title">Live Stats</div>
       <div class="sidebar-stats">
@@ -509,14 +557,6 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="searchInput" placeholder="Search jobs, companies, or skills..." oninput="debounceSearch(this.value)">
-        </div>
-      </div>
-
-      <!-- AD BANNER BELOW HERO -->
-      <div class="ad-block-banner">
-        <div>
-          <div class="ad-label">Advertisement</div>
-          ${AD1}
         </div>
       </div>
 
@@ -577,24 +617,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
           <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
         </div>
         <div class="jobs-list" id="jobsList"><div class="loader-wrap"><div class="loader"></div></div></div>
-
-        <!-- AD BETWEEN JOBS (after page 1) -->
-        <div class="ad-between" id="adBetween" style="display:none">
-          <div class="ad-label">Advertisement</div>
-          <div class="ad-block">
-            ${AD3}
-          </div>
-        </div>
-
         <div class="pagination" id="pagination"></div>
-
-        <!-- AD AFTER PAGINATION -->
-        <div style="margin-top:20px">
-          <div class="ad-label">Advertisement</div>
-          <div class="ad-block">
-            ${AD1}
-          </div>
-        </div>
       </div>
     </div>
 
@@ -641,12 +664,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       <div class="blog-wrap">
         <button class="back-btn" onclick="goView('jobs')">← Back to Jobs</button>
         <h2 style="font-size:26px;font-weight:800;margin-bottom:6px">📝 Career Blog</h2>
-        <p style="color:var(--t2);font-size:15px;margin-bottom:8px">Insights, guides, and salary data for remote job seekers.</p>
-        <!-- AD IN BLOG -->
-        <div class="ad-between">
-          <div class="ad-label">Advertisement</div>
-          <div class="ad-block">${AD2}</div>
-        </div>
+        <p style="color:var(--t2);font-size:15px">Insights, guides, and salary data for remote job seekers.</p>
         <div class="blog-grid" id="blogGrid"></div>
       </div>
     </div>
@@ -661,12 +679,12 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast"><span id="toastIcon">✓</span> <span id="toastMsg">Done</span></div>
+<div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastMsg">Done</span></div>
 
 <script>
 // ── STATE ──
-let pg=1,cat='',srch='',advT,srchT;
-let jobs=[],total=0;
+let pg=1, cat='', srch='', advT, srchT;
+let jobs=[], total=0;
 let savedIds=JSON.parse(localStorage.getItem('jn_saved')||'[]');
 let alertKws=[];
 let adv={remote:'',employ:'',seniority:'',salaryMin:'',days:''};
@@ -676,10 +694,12 @@ let isLight=localStorage.getItem('jn_theme')==='light';
 function applyTheme(){
   document.body.classList.toggle('light',isLight);
   const ic=isLight?'☀️':'🌙';
-  ['themeBtn','themeNavIcon','drawerThemeIcon'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.textContent=ic;
-  });
+  const tb=document.getElementById('themeBtn');
+  const tni=document.getElementById('themeNavIcon');
+  const dti=document.getElementById('drawerThemeIcon');
+  if(tb)tb.textContent=ic;
+  if(tni)tni.textContent=ic;
+  if(dti)dti.textContent=ic;
 }
 function toggleTheme(){isLight=!isLight;localStorage.setItem('jn_theme',isLight?'light':'dark');applyTheme();}
 applyTheme();
@@ -696,32 +716,16 @@ function closeDrawer(){
   document.body.style.overflow='';
 }
 
-// ── LOGO HELPERS ──
-function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
-
+// ── HELPERS ──
+function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function logoHtml(co,sz='48px',cls='co-logo'){
   const slug=(co||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const domain=slug+'.com';
   const ini=initials(co);
-  const fs=Math.round(parseInt(sz)*.33)+'px';
-  const uid='l'+Math.random().toString(36).slice(2,8);
-  return \`<div class="\${cls}" style="width:\${sz};height:\${sz}" title="\${co}">
-    <img id="\${uid}"
-      src="https://www.google.com/s2/favicons?domain=\${domain}&sz=64"
-      alt="\${co}"
-      style="width:100%;height:100%;object-fit:contain;padding:5px;display:block"
-      onerror="
-        this.onerror=null;
-        this.src='https://icons.duckduckgo.com/ip3/\${domain}.ico';
-        this.onerror=function(){
-          this.style.display='none';
-          this.nextElementSibling.style.display='flex';
-        };
-      ">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${fs};font-weight:800;color:var(--accent-l);letter-spacing:-1px">\${ini}</span>
+  return \`<div class="\${cls}" style="width:\${sz};height:\${sz}">
+    <img src="https://logo.clearbit.com/\${slug}.com" alt="\${co}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${parseInt(sz)*.33}px;font-weight:800;color:var(--accent-l)">\${ini}</span>
   </div>\`;
 }
-
 function remoteTag(t){
   if(!t)return'';
   const m={fully_remote:['tag-remote','🌐 Remote'],hybrid:['tag-hybrid','🏢 Hybrid'],on_site:['tag-onsite','📍 On-site'],onsite:['tag-onsite','📍 On-site']};
@@ -741,6 +745,7 @@ function updateSavedCount(){document.getElementById('saved-cnt').textContent=sav
 // ── VIEWS ──
 const VIEWS=['vJobs','vDetail','vCompany','vSaved','vAlerts','vBlog','vArticle','vStatic'];
 function showView(id){VIEWS.forEach(v=>document.getElementById(v).style.display=v===id?'block':'none');window.scrollTo(0,0);}
+
 function goView(v){
   if(v==='jobs'){showView('vJobs');return;}
   if(v==='saved'){showView('vSaved');renderSaved();return;}
@@ -750,8 +755,10 @@ function goView(v){
 
 // ── ADV FILTERS ──
 function toggleAdv(){
-  document.getElementById('advFilters').classList.toggle('open');
-  document.getElementById('advToggleBtn').classList.toggle('active');
+  const el=document.getElementById('advFilters');
+  const btn=document.getElementById('advToggleBtn');
+  el.classList.toggle('open');
+  btn.classList.toggle('active');
 }
 function applyAdvFilters(){
   adv.remote=document.getElementById('fRemote').value;
@@ -773,7 +780,6 @@ function clearAdvFilters(){
 async function loadJobs(){
   document.getElementById('jobsList').innerHTML='<div class="loader-wrap"><div class="loader"></div></div>';
   document.getElementById('pagination').innerHTML='';
-  document.getElementById('adBetween').style.display='none';
   const p=new URLSearchParams({page:pg});
   if(cat)p.set('category',cat);
   if(srch)p.set('search',srch);
@@ -791,15 +797,7 @@ async function loadJobs(){
       document.getElementById('jobsList').innerHTML='<div class="empty"><div class="e-icon">🔍</div><h3>No jobs found</h3><p>Try different keywords or browse all categories</p></div>';
       return;
     }
-
-    // أظهر الإعلان بين الوظائف
-    document.getElementById('adBetween').style.display='block';
-
-    // اقسم الوظائف: 5 أولى + إعلان + باقيها
-    const first5=jobs.slice(0,5);
-    const rest=jobs.slice(5);
-
-    function cardHtml(j){
+    document.getElementById('jobsList').innerHTML=jobs.map(j=>{
       const saved=savedIds.includes(j.id);
       const newBadge=isNew(j.created_at)?'<span class="tag-new">NEW</span>':'';
       return\`<article class="job-card" onclick="showDetail(\${j.id})" tabindex="0" role="button">
@@ -818,35 +816,19 @@ async function loadJobs(){
           <div class="job-right">
             \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':''}
             <div class="card-actions">
-              <button class="save-btn\${saved?' saved':''}" onclick="event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}" title="Save job">🔖</button>
+              <button class="save-btn\${saved?' saved':''}" onclick="event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}" title="Save job">\${saved?'🔖':'🔖'}</button>
               <button class="share-btn" onclick="event.stopPropagation();shareJob(\${j.id})" title="Copy link">🔗</button>
               <div class="apply-arr">→</div>
             </div>
           </div>
         </div>
       </article>\`;
-    }
-
-    const listEl=document.getElementById('jobsList');
-    listEl.innerHTML=\`
-      \${first5.map(cardHtml).join('')}
-      \${rest.length>0?\`
-        <div class="ad-between">
-          <div class="ad-label">Advertisement</div>
-          <div class="ad-block" style="min-height:60px">
-            <div id="adInList"></div>
-          </div>
-        </div>
-        \${rest.map(cardHtml).join('')}
-      \`:''}
-    \`;
-
+    }).join('');
     const tp=Math.ceil(total/20);
     if(tp>1)document.getElementById('pagination').innerHTML=\`
       <button class="page-btn" onclick="goPage(\${pg-1})" \${pg===1?'disabled':''}>← Prev</button>
       <span class="page-info">Page \${pg} of \${tp}</span>
       <button class="page-btn" onclick="goPage(\${pg+1})" \${pg===tp?'disabled':''}>Next →</button>\`;
-
     document.querySelectorAll('.job-card').forEach(c=>c.addEventListener('keydown',e=>{if(e.key==='Enter')c.click();}));
   }catch(e){
     document.getElementById('jobsList').innerHTML='<div class="empty"><div class="e-icon">⚠️</div><h3>Failed to load</h3><p>Please refresh and try again</p></div>';
@@ -893,12 +875,7 @@ async function showDetail(id){
       <div class="detail-body">
         \${skills.length?'<div class="s-title">Required Skills</div><div class="skills-grid">'+skills.map(s=>'<span class="skill-tag">'+s+'</span>').join('')+'</div>':''}
         <div class="s-title">Job Description</div>
-        <div class="desc-body">\${j.description&&j.description.length>20?j.description:'<span style="color:var(--t3)">Full description available on the company website.</span>'}</div>
-        <!-- AD IN DETAIL -->
-        <div class="ad-between">
-          <div class="ad-label">Advertisement</div>
-          <div class="ad-block">${AD3}</div>
-        </div>
+        <div class="desc-body">\${j.description&&j.description.length>20?j.description:'<span style="color:var(--t3)">Full description available on the company website. Click Apply Now to view complete details.</span>'}</div>
         <div class="detail-actions">
           <a href="\${j.url}" target="_blank" rel="noopener" class="apply-btn">Apply Now →</a>
           <button class="share-detail-btn" onclick="shareJob(\${j.id})">🔗 Copy Link</button>
@@ -936,8 +913,9 @@ async function showCompany(encodedName){
           </div>
         </div>
       </div>
+      <div style="margin-bottom:16px;font-size:14px;color:var(--t2)">All open positions at <strong style="color:var(--t1)">\${name}</strong></div>
       <div class="jobs-list">\${coJobs.map(j=>\`
-        <article class="job-card" onclick="jobs=[...jobs,...[\${JSON.stringify(j)}]];showDetail(\${j.id})" tabindex="0">
+        <article class="job-card" onclick="jobs=[...jobs,\${JSON.stringify(j)}];showDetail(\${j.id})" tabindex="0">
           <div class="card-top">
             \${logoHtml(j.company)}
             <div class="job-info">
@@ -1028,7 +1006,7 @@ async function submitAlert(){
     const d=await res.json();
     if(d.success){showToast('Subscribed! 🎉');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
     else showToast(d.error||'Something went wrong','info');
-  }catch(e){showToast('Failed. Try again.','info');}
+  }catch(e){showToast('Failed. Please try again.','info');}
 }
 
 // ── BLOG ──
@@ -1051,34 +1029,30 @@ function showArticle(id){
     <h1 class="article-title">\${p.title}</h1>
     <div class="article-meta"><span>📅 \${p.date}</span><span>⏱ \${p.readTime}</span></div>
     <div class="article-body">\${p.body}</div>
-    <div class="ad-between">
-      <div class="ad-label">Advertisement</div>
-      <div class="ad-block">${AD1}</div>
-    </div>
-    <div style="margin-top:24px"><button class="back-btn" onclick="goView('blog')">← Back to Blog</button></div>\`;
+    <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--border)">
+      <button class="back-btn" onclick="goView('blog')">← Back to Blog</button>
+    </div>\`;
 }
 
-// ── STATIC ──
+// ── STATIC PAGES ──
 const STATIC={
   privacy:{title:'Privacy Policy',date:'Last updated: June 25, 2026',body:\`
-    <h2>1. Information We Collect</h2><p>JobNova does not collect personal information from visitors. No registration or login is required.</p>
-    <h2>2. Job Alert Subscribers</h2><p>If you subscribe to job alerts, we store your email and keywords solely to send notifications. We do not sell this data.</p>
-    <h2>3. Cookies & Storage</h2><p>We use browser localStorage only to remember saved jobs and theme preference. No tracking cookies are used.</p>
-    <h2>4. Third-Party Links</h2><p>We are not responsible for the privacy practices of external job application websites.</p>
-    <h2>5. Advertising</h2><p>This site displays third-party advertisements. Ad networks may use cookies to serve relevant ads. We are not responsible for ad content.</p>
-    <h2>6. Contact</h2><p>For privacy questions: <a href="mailto:hello@jobnova.dev">hello@jobnova.dev</a></p>\`},
+    <h2>1. Information We Collect</h2><p>JobNova does not collect personal information from visitors browsing job listings. No registration or login is required.</p>
+    <h2>2. Job Alert Subscribers</h2><p>If you subscribe to job alerts, we store your email address and keyword preferences solely to send relevant job notifications. We do not sell or share this data.</p>
+    <h2>3. Cookies & Storage</h2><p>We use browser localStorage only to remember your saved jobs and theme preference. No tracking cookies are used.</p>
+    <h2>4. Third-Party Links</h2><p>Our site contains links to external job application pages. We are not responsible for the privacy practices of these websites.</p>
+    <h2>5. Contact</h2><p>For privacy-related questions: <a href="mailto:hello@jobnova.dev">hello@jobnova.dev</a></p>\`},
   terms:{title:'Terms of Service',date:'Last updated: June 25, 2026',body:\`
-    <h2>1. Acceptance</h2><p>By accessing JobNova, you agree to these Terms of Service.</p>
-    <h2>2. Service Description</h2><p>JobNova is a job aggregation platform curating listings from third-party APIs.</p>
-    <h2>3. Prohibited Activities</h2><ul><li>Scraping or bulk downloading of job data</li><li>Using the service to send spam</li><li>Interfering with site functionality</li></ul>
-    <h2>4. Accuracy of Listings</h2><p>We do not guarantee accuracy or availability of any listing. Verify details directly with employers.</p>
-    <h2>5. Limitation of Liability</h2><p>JobNova is provided "as is" without warranties. We are not liable for damages arising from use of this service.</p>\`},
+    <h2>1. Acceptance of Terms</h2><p>By accessing JobNova, you agree to these Terms of Service.</p>
+    <h2>2. Service Description</h2><p>JobNova is a job aggregation and discovery platform. We curate job listings from third-party APIs.</p>
+    <h2>3. Prohibited Activities</h2><ul><li>Scraping or bulk downloading of job listings</li><li>Using the service to send spam</li><li>Attempting to interfere with site functionality</li></ul>
+    <h2>4. Accuracy of Listings</h2><p>We do not guarantee the accuracy or availability of any job listing. Always verify details directly with the employer.</p>
+    <h2>5. Limitation of Liability</h2><p>JobNova is provided "as is" without warranties. We are not liable for any damages arising from use of this service.</p>\`},
   disclaimer:{title:'Disclaimer',date:'Last updated: June 25, 2026',body:\`
-    <h2>Job Listing Accuracy</h2><p>JobNova aggregates listings from third-party sources. Accuracy, completeness, and timeliness are not guaranteed.</p>
+    <h2>Job Listing Accuracy</h2><p>JobNova aggregates listings from third-party sources. We make no representations about accuracy or timeliness. Job availability and salary information may change without notice.</p>
     <h2>No Employment Relationship</h2><p>JobNova is a discovery platform, not an employer or recruiter. We do not participate in the hiring process.</p>
-    <h2>Salary Information</h2><p>Salary figures are estimates and may not reflect actual compensation offered by employers.</p>
-    <h2>No Guarantee of Employment</h2><p>All hiring decisions are made exclusively by respective employers.</p>
-    <h2>Advertisement Disclaimer</h2><p>This site displays third-party advertisements. JobNova is not responsible for advertised products or services.</p>\`}
+    <h2>Salary Information</h2><p>Salary figures are estimates from data sources and may not reflect actual compensation offered by employers.</p>
+    <h2>No Guarantee of Employment</h2><p>Listing a job on JobNova does not guarantee employment. All hiring decisions are made exclusively by respective employers.</p>\`}
 };
 function showStatic(id){
   const p=STATIC[id];if(!p)return;
@@ -1126,6 +1100,7 @@ export default {
     const url = new URL(request.url);
     await ensureTable(env);
 
+    // SITEMAP
     if (url.pathname === "/sitemap.xml") {
       const { results } = await env.DB.prepare("SELECT id FROM jobs ORDER BY id DESC LIMIT 500").all();
       const base = "https://app.jobnova.workers.dev";
@@ -1137,6 +1112,7 @@ export default {
         { headers: { "Content-Type": "application/xml" } });
     }
 
+    // RSS
     if (url.pathname === "/feed.rss") {
       const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC LIMIT 50").all();
       const base = "https://app.jobnova.workers.dev";
@@ -1149,10 +1125,12 @@ export default {
       </item>`).join('');
       return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>
         <title>JobNova — Remote Jobs</title><link>${base}</link>
-        <description>Latest remote job listings from JobNova</description>${items}
-      </channel></rss>`, { headers: { "Content-Type": "application/rss+xml" } });
+        <description>Latest remote job listings from JobNova</description>
+        ${items}</channel></rss>`,
+        { headers: { "Content-Type": "application/rss+xml" } });
     }
 
+    // SUBSCRIBE
     if (url.pathname === "/api/subscribe" && request.method === "POST") {
       try {
         const { email, keywords } = await request.json();
@@ -1164,15 +1142,19 @@ export default {
       }
     }
 
+    // JOB DETAIL
     if (url.pathname === "/api/job") {
       const id = url.searchParams.get("id");
       if (!id) return new Response(JSON.stringify({ error:"id required" }), { status:400, headers:{"Content-Type":"application/json"} });
       const { results } = await env.DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(id).all();
       if (!results.length) return new Response(JSON.stringify({ error:"Not found" }), { status:404, headers:{"Content-Type":"application/json"} });
       let job = results[0];
+      // جلب الوصف من API إذا كان فارغاً
       if ((!job.description || job.description.length < 20) && job.job_handle) {
         try {
-          const r = await fetch(`https://api.jobdatalake.com/v1/jobs/${job.job_handle}`, { headers: { "X-API-Key": env.API_KEY } });
+          const r = await fetch(`https://api.jobdatalake.com/v1/jobs/${job.job_handle}`, {
+            headers: { "X-API-Key": env.API_KEY }
+          });
           if (r.ok) {
             const detail = await r.json();
             const desc = detail.description || detail.summary || detail.snippet || "";
@@ -1186,6 +1168,7 @@ export default {
       return new Response(JSON.stringify(job), { headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"} });
     }
 
+    // JOBS LIST
     if (url.pathname === "/api/jobs") {
       const page = parseInt(url.searchParams.get("page")||"1");
       const limit = 20, offset = (page-1)*limit;
@@ -1211,6 +1194,7 @@ export default {
         { headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"} });
     }
 
+    // SYNC
     if (url.pathname === "/api/sync") {
       try {
         const result = await syncJobs(env);
@@ -1220,12 +1204,14 @@ export default {
       }
     }
 
+    // DEBUG
     if (url.pathname === "/api/debug") {
       const { results } = await env.DB.prepare("SELECT COUNT(*) as count FROM jobs").all();
       return new Response(JSON.stringify({ jobs_in_db:results[0]?.count||0, api_key_set:!!env.API_KEY }),
         { headers:{"Content-Type":"application/json"} });
     }
 
+    // MIGRATE
     if (url.pathname === "/api/migrate") {
       await env.DB.prepare("DROP TABLE IF EXISTS jobs").run();
       await env.DB.prepare("DROP TABLE IF EXISTS subscribers").run();
