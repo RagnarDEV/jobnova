@@ -431,8 +431,10 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
 </head>
 <body>
 
+<!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 
+<!-- MOBILE DRAWER -->
 <div class="mob-drawer" id="mobDrawer">
   <button class="drawer-close" onclick="closeDrawer()">✕</button>
   <div>
@@ -458,13 +460,14 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
     <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="drawerThemeIcon">🌙</span>Dark / Light</button>
   </div>
   
+  <!-- إعلان 1: القائمة الجانبية للموبايل -->
   <div style="margin-top: 16px; display: flex; justify-content: center; transform: scale(0.8); transform-origin: top center; height: 200px;">
     <script>
       atOptions = {
         'key' : '0ffa7f357eb68570f215b35f87c4ff62',
         'format' : 'iframe',
-        'height' : 250,
-        'width' : 300,
+        'height' : 50,
+        'width' : 320,
         'params' : {}
       };
     </script>
@@ -480,6 +483,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
   </div>
 </div>
 
+<!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker-track">
     <span class="t-item"><span class="t-dot"></span><strong id="tc1">613</strong> Active Jobs</span>
@@ -497,6 +501,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
   </div>
 </div>
 
+<!-- MOBILE HEADER -->
 <div class="mob-hdr">
   <span class="mob-logo">JobNova</span>
   <div class="mob-btns">
@@ -506,8 +511,10 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
   </div>
 </div>
 
+<!-- APP -->
 <div class="app">
 
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div>
       <span class="logo">JobNova</span>
@@ -543,13 +550,14 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
     
+    <!-- إعلان 2: القائمة الجانبية للشاشات الكبيرة -->
     <div style="margin-top: 20px; display: flex; justify-content: center; transform: scale(0.73); transform-origin: top center; height: 185px; overflow: hidden; border-radius: 12px;">
       <script>
         atOptions = {
           'key' : '0ffa7f357eb68570f215b35f87c4ff62',
           'format' : 'iframe',
-          'height' : 250,
-          'width' : 300,
+          'height' : 50,
+          'width' : 320,
           'params' : {}
         };
       </script>
@@ -567,8 +575,10 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
     </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main">
 
+    <!-- JOBS VIEW -->
     <div id="vJobs">
       <div class="hero">
         <div class="hero-badge">✨ AI-Powered Job Matching — Updated Hourly</div>
@@ -637,13 +647,14 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
           <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
         </div>
 
+        <!-- إعلان 3: وسط الصفحة الرئيسية قبل الوظائف -->
         <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center; width: 100%; padding: 12px; background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden;">
           <script>
             atOptions = {
               'key' : '0ffa7f357eb68570f215b35f87c4ff62',
               'format' : 'iframe',
-              'height' : 250,
-              'width' : 300,
+              'height' : 50,
+              'width' : 320,
               'params' : {}
             };
           </script>
@@ -655,10 +666,13 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
 
+    <!-- DETAIL VIEW -->
     <div id="vDetail" style="display:none"><div class="detail-wrap" id="detailContent"></div></div>
 
+    <!-- COMPANY VIEW -->
     <div id="vCompany" style="display:none"><div class="company-wrap" id="companyContent"></div></div>
 
+    <!-- SAVED VIEW -->
     <div id="vSaved" style="display:none">
       <div class="saved-wrap">
         <div class="saved-hdr">
@@ -669,6 +683,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
 
+    <!-- ALERTS VIEW -->
     <div id="vAlerts" style="display:none">
       <div class="alert-wrap">
         <button class="back-btn" onclick="goView('jobs')">← Back to Jobs</button>
@@ -689,6 +704,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
 
+    <!-- BLOG VIEW -->
     <div id="vBlog" style="display:none">
       <div class="blog-wrap">
         <button class="back-btn" onclick="goView('jobs')">← Back to Jobs</button>
@@ -698,13 +714,16 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
 
+    <!-- ARTICLE VIEW -->
     <div id="vArticle" style="display:none"><div class="article-wrap" id="articleContent"></div></div>
 
+    <!-- STATIC PAGES -->
     <div id="vStatic" style="display:none"><div class="static-wrap" id="staticContent"></div></div>
 
   </main>
 </div>
 
+<!-- TOAST -->
 <div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toastMsg">Done</span></div>
 
 <script>
