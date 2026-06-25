@@ -718,13 +718,31 @@ function closeDrawer(){
 
 // ── HELPERS ──
 function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
-function logoHtml(co,sz='48px',cls='co-logo'){
-  const slug=(co||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const ini=initials(co);
-  return \`<div class="\${cls}" style="width:\${sz};height:\${sz}">
-    <img src="https://logo.clearbit.com/\${slug}.com" alt="\${co}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${parseInt(sz)*.33}px;font-weight:800;color:var(--accent-l)">\${ini}</span>
-  </div>\`;
+function logoHtml(co, sz='48px', cls='co-logo') {
+  const slug = (co || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const domain = slug + '.com';
+  const ini = initials(co);
+  const fontSize = Math.round(parseInt(sz) * 0.33) + 'px';
+
+  // 3 مصادر بالتتابع: Google → DuckDuckGo → Initials
+  return `<div class="${cls}" style="width:${sz};height:${sz}" title="${co}">
+    <img
+      id="logo-${slug}-${Math.random().toString(36).slice(2,6)}"
+      src="https://www.google.com/s2/favicons?domain=${domain}&sz=64"
+      alt="${co}"
+      style="width:100%;height:100%;object-fit:contain;padding:6px"
+      onerror="
+        this.onerror=null;
+        this.src='https://icons.duckduckgo.com/ip3/${domain}.ico';
+        this.onerror=function(){
+          this.style.display='none';
+          this.nextElementSibling.style.display='flex';
+        };
+      ">
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${fontSize};font-weight:800;color:var(--accent-l);letter-spacing:-1px">
+      ${ini}
+    </span>
+  </div>`;
 }
 function remoteTag(t){
   if(!t)return'';
