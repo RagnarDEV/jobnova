@@ -118,6 +118,17 @@ export default {
 
     // الصفحة الرئيسية - سنحسنها لاحقاً
     return new Response(`
+    // أضف هذا في fetch handler قبل الـ HTML
+if (url.pathname === "/api/test-api") {
+  const apiUrl = `https://api.jobdatalake.com/v1/jobs?q=developer&per_page=3`;
+  const response = await fetch(apiUrl, {
+    headers: { "X-API-Key": env.API_KEY }
+  });
+  const text = await response.text();
+  return new Response(text, {
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+  });
+}
 <!DOCTYPE html>
 <html class="dark">
 <head>
