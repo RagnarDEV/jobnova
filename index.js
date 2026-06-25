@@ -2,14 +2,14 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // 1. مسار جلب الوظائف من قاعدة البيانات D1
+    // 1. مسار الـ API: جلب الوظائف من قاعدة بيانات D1 وترتيبها من الأحدث للأقدم
     if (url.pathname === "/api/jobs") {
       try {
         const { results } = await env.db.prepare("SELECT * FROM jobs ORDER BY id DESC").all();
         return new Response(JSON.stringify(results), {
           headers: {
             "Content-Type": "application/json;charset=UTF-8",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*" // للسماح للموقع بسحب البيانات بدون قيود CORS
           }
         });
       } catch (error) {
@@ -20,11 +20,11 @@ export default {
       }
     }
 
-    // 2. مسار تشغيل المزامنة عند الضغط على الزر (يمكنك ربطه بدالتك لاحقاً)
+    // 2. مسار الـ API: تشغيل عملية المزامنة وجلب الوظائف الجديدة
     if (url.pathname === "/api/sync") {
       try {
-        // هنا يمكنك وضع كود المزامنة الفعلي مستقبلاً
-        return new Response(JSON.stringify({ success: true, message: "تمت مزامنة الوظائف بنجاح!" }), {
+        // هنا سيتم إضافة منطق الاسكربت التلقائي والمزامنة لاحقاً
+        return new Response(JSON.stringify({ success: true, message: "Jobs synchronized successfully!" }), {
           headers: { "Content-Type": "application/json;charset=UTF-8" }
         });
       } catch (error) {
@@ -35,12 +35,12 @@ export default {
       }
     }
 
-    // 3. الصفحة الرئيسية الافتراضية للمنصة (HTML + كود الـ JavaScript للزر)
+    // 3. الواجهة الأمامية للموقع: صفحة الـ HTML مع سكربت تشغيل زر المزامنة
     const html = `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>JobNova API</title>
+    <title>JobNova API Portal</title>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #f9f9f9; color: #333; }
         h1 { color: #222; }
@@ -51,25 +51,26 @@ export default {
     </style>
 </head>
 <body>
-    <h1>مرحباً بك في منصة JobNova! 🚀</h1>
-    <p>يعملان معاً بنجاح Worker قاعدة البيانات والـ</p>
+    <h1>Welcome to JobNova! 🚀</h1>
+    <p>The Worker and D1 Database are connected and running successfully.</p>
     
-    <button id="syncBtn" class="btn">🔄 مزامنة الوظائف الآن</button>
+    <button id="syncBtn" class="btn">🔄 Sync Jobs Now</button>
     <div id="status"></div>
 
-    <a href="/api/jobs">← تصفح واجهة الوظائف المحفوظة (API)</a>
+    <a href="/api/jobs">← Browse Saved Jobs (API)</a>
 
     <script>
         const btn = document.getElementById('syncBtn');
         const statusDiv = document.getElementById('status');
 
+        // الاستماع لحدث الضغط على الزر لتشغيل المزامنة في الخلفية
         btn.addEventListener('click', async () => {
-            btn.disabled = true;
+            btn.disabled = true; // تعطيل الزر مؤقتاً لمنع التكرار
             statusDiv.style.color = 'orange';
-            statusDiv.innerText = 'جاري المزامنة الآن...';
+            statusDiv.innerText = 'Syncing now...';
 
             try {
-                // استدعاء مسار المزامنة في الخلفية
+                // استدعاء مسار المزامنة التلقائي
                 const response = await fetch('/api/sync');
                 const data = await response.json();
                 
@@ -78,13 +79,13 @@ export default {
                     statusDiv.innerText = '✅ ' + data.message;
                 } else {
                     statusDiv.style.color = 'red';
-                    statusDiv.innerText = '❌ خطأ: ' + data.error;
+                    statusDiv.innerText = '❌ Error: ' + data.error;
                 }
             } catch (error) {
                 statusDiv.style.color = 'red';
-                statusDiv.innerText = '❌ حدث خطأ أثناء الاتصال بالخادم.';
+                statusDiv.innerText = '❌ Connection error occurred.';
             } finally {
-                btn.disabled = false;
+                btn.disabled = false; // إعادة تفعيل الزر بعد الانتهاء
             }
         });
     </script>
