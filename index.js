@@ -1,8 +1,3 @@
-const KEYWORDS = ["developer","frontend","backend","fullstack","software",
-  "python","javascript","react","node","ai","machine learning","data",
-  "devops","mobile","ui/ux","graphic","product designer","video",
-  "motion","writer","seo","marketing","manager","remote"];
-
 async function ensureTable(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS jobs (
@@ -10,6 +5,7 @@ async function ensureTable(env) {
       title TEXT, company TEXT, location TEXT,
       url TEXT UNIQUE, description TEXT,
       salary TEXT, remote_type TEXT, skills TEXT,
+      seniority TEXT, employment_type TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
@@ -23,62 +19,76 @@ async function syncJobs(env) {
 
   for (const q of queries) {
     const apiUrl = `https://api.jobdatalake.com/v1/jobs?q=${q}&per_page=100`;
-
     let response;
     try {
       response = await fetch(apiUrl, { headers: { "X-API-Key": env.API_KEY } });
-    } catch(e) {
-      errors.push(`Fetch error for "${q}": ${e.message}`);
-      continue;
-    }
+    } catch(e) { errors.push(`Fetch "${q}": ${e.message}`); continue; }
 
-    if (!response.ok) {
-      errors.push(`API ${response.status} for "${q}"`);
-      continue;
-    }
+    if (!response.ok) { errors.push(`API ${response.status} for "${q}"`); continue; }
 
     const data = await response.json();
-    const jobs = Array.isArray(data)
-      ? data
-      : (data.hits || data.jobs || data.results || data.data || []);
+    const jobs = data.jobs || data.hits || data.results || (Array.isArray(data) ? data : []);
 
     for (const job of jobs) {
-      const jobUrl = job.url || job.apply_url || job.job_url
-                   || job.application_url || job.link || job.applyUrl || "";
-
+      const jobUrl = job.url || "";
       if (!jobUrl) { skipped++; continue; }
 
-      const title = job.title || job.job_title || "Unknown";
-      const company = job.company || job.company_name || job.employer || "Company";
-      const location = job.location || job.city || job.country || "Remote";
-      const description = job.description || job.summary || job.snippet || "";
-      const salary = job.salary || job.salary_range ||
-                     (job.salary_min ? `$${job.salary_min}-${job.salary_max}` : "");
-      const remoteType = job.remote_type || job.remoteType || job.work_type || "";
-      const skills = JSON.stringify(job.skills || job.required_skills || job.tags || []);
+      const salary = job.salary_min_usd && job.salary_max_usd
+        ? `$${job.salary_min_usd}k - $${job.salary_max_usd}k`
+        : "";
+      const location = Array.isArray(job.locations) && job.locations.length
+        ? job.locations[0]
+        : (job.remote_type === "fully_remote" ? "Remote" : "");
+      const skills = JSON.stringify(job.required_skills || []);
 
       try {
         const r = await env.DB.prepare(
           `INSERT OR IGNORE INTO jobs
-           (title, company, location, url, description, salary, remote_type, skills)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(title, company, location, jobUrl, description, salary, remoteType, skills).run();
-
+           (title, company, location, url, description, salary, remote_type, skills, seniority, employment_type)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          job.title || "Unknown",
+          job.company_name || "Company",
+          location,
+          jobUrl,
+          job.description || "",
+          salary,
+          job.remote_type || "",
+          skills,
+          Array.isArray(job.seniority) ? job.seniority.join(", ") : "",
+          job.employment_type || ""
+        ).run();
         if (r.meta?.changes > 0) inserted++;
         else skipped++;
       } catch(e) {
-        errors.push(`DB error: ${e.message}`);
+        errors.push(`DB: ${e.message.slice(0, 80)}`);
       }
     }
   }
-
-  return { inserted, skipped, errors: errors.slice(0, 5), queries: queries.length };
+  return { inserted, skipped, errors: errors.slice(0, 3), queries: queries.length };
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     await ensureTable(env);
+
+    if (url.pathname === "/api/migrate") {
+      await env.DB.prepare("DROP TABLE IF EXISTS jobs").run();
+      await env.DB.prepare(`
+        CREATE TABLE jobs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT, company TEXT, location TEXT,
+          url TEXT UNIQUE, description TEXT,
+          salary TEXT, remote_type TEXT, skills TEXT,
+          seniority TEXT, employment_type TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+      return new Response(JSON.stringify({ success: true, message: "Table recreated" }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
 
     if (url.pathname === "/api/jobs") {
       const page = parseInt(url.searchParams.get("page") || "1");
@@ -101,6 +111,7 @@ export default {
       }
 
       const where = conditions.length ? " WHERE " + conditions.join(" AND ") : "";
+
       const { results } = await env.DB.prepare(
         `SELECT * ${baseQuery}${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`
       ).bind(...params).all();
@@ -191,6 +202,7 @@ export default {
 
   <script>
     let currentPage = 1, currentCat = '', currentSearch = '', searchTimeout;
+    let cachedJobs = [];
 
     async function loadJobs() {
       document.getElementById('content-area').innerHTML = '<div class="text-center text-slate-500 py-12">Loading jobs...</div>';
@@ -200,53 +212,70 @@ export default {
 
       const res = await fetch('/api/jobs?' + params);
       const data = await res.json();
+      cachedJobs = data.jobs || [];
 
       document.getElementById('stats').textContent = data.total + ' jobs found';
 
-      if (!data.jobs?.length) {
+      if (!cachedJobs.length) {
         document.getElementById('content-area').innerHTML = '<div class="text-center text-slate-500 py-12">No jobs found.</div>';
+        document.getElementById('pagination').innerHTML = '';
         return;
       }
 
-      document.getElementById('content-area').innerHTML = data.jobs.map(job => \`
+      document.getElementById('content-area').innerHTML = cachedJobs.map(job => \`
         <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl hover:border-emerald-500 transition cursor-pointer"
              onclick="showDetail(\${job.id})">
           <div class="flex justify-between items-start gap-4">
-            <div>
-              <h2 class="text-lg font-bold text-slate-100">\${job.title}</h2>
+            <div class="flex-1 min-w-0">
+              <h2 class="text-lg font-bold text-slate-100 truncate">\${job.title}</h2>
               <p class="text-emerald-400 font-medium mt-1">\${job.company}</p>
-              <p class="text-slate-500 text-sm mt-1">\${job.location}\${job.remote_type ? ' · ' + job.remote_type : ''}</p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                \${job.location ? '<span class="text-slate-500 text-xs">' + job.location + '</span>' : ''}
+                \${job.remote_type ? '<span class="bg-emerald-900 text-emerald-300 text-xs px-2 py-0.5 rounded-full">' + job.remote_type.replace('_', ' ') + '</span>' : ''}
+                \${job.employment_type ? '<span class="bg-slate-800 text-slate-400 text-xs px-2 py-0.5 rounded-full">' + job.employment_type.replace('_', ' ') + '</span>' : ''}
+              </div>
             </div>
-            \${job.salary ? '<span class="text-emerald-500 text-sm font-semibold shrink-0">' + job.salary + '</span>' : ''}
+            \${job.salary ? '<span class="text-emerald-500 text-sm font-bold shrink-0">' + job.salary + '</span>' : ''}
           </div>
         </div>
       \`).join('');
 
       const totalPages = Math.ceil(data.total / 20);
       document.getElementById('pagination').innerHTML = totalPages > 1 ? \`
-        \${currentPage > 1 ? '<button onclick="goPage(' + (currentPage-1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700">Prev</button>' : ''}
-        <span class="px-4 py-2 text-slate-400">Page \${currentPage} of \${totalPages}</span>
-        \${currentPage < totalPages ? '<button onclick="goPage(' + (currentPage+1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700">Next</button>' : ''}
+        \${currentPage > 1 ? '<button onclick="goPage(' + (currentPage-1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">Prev</button>' : ''}
+        <span class="px-4 py-2 text-slate-400 text-sm">Page \${currentPage} of \${totalPages}</span>
+        \${currentPage < totalPages ? '<button onclick="goPage(' + (currentPage+1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700 text-sm">Next</button>' : ''}
       \` : '';
     }
 
-    async function showDetail(id) {
-      const res = await fetch('/api/jobs?page=1&limit=1000');
-      const data = await res.json();
-      const job = data.jobs?.find(j => j.id === id);
+    function showDetail(id) {
+      const job = cachedJobs.find(j => j.id === id);
       if (!job) return;
 
+      let skillsArr = [];
+      try { skillsArr = JSON.parse(job.skills || '[]'); } catch(e) {}
+
       document.getElementById('content-area').innerHTML = \`
-        <button onclick="loadJobs()" class="text-emerald-500 mb-4 hover:underline">Back to Jobs</button>
+        <button onclick="loadJobs()" class="text-emerald-500 mb-4 hover:underline text-sm">Back to Jobs</button>
         <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
           <h1 class="text-2xl font-bold mb-2">\${job.title}</h1>
-          <p class="text-emerald-400 font-semibold mb-1">\${job.company}</p>
-          <p class="text-slate-400 mb-4">\${job.location}</p>
-          \${job.salary ? '<p class="text-emerald-500 font-bold mb-4">' + job.salary + '</p>' : ''}
-          <div class="text-slate-300 mb-6 leading-relaxed">\${job.description || 'No description available.'}</div>
-          <a href="\${job.url}" target="_blank" class="inline-block bg-emerald-600 px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 transition">Apply Now</a>
+          <p class="text-emerald-400 font-semibold text-lg mb-1">\${job.company}</p>
+          <div class="flex flex-wrap gap-2 mb-4">
+            \${job.location ? '<span class="text-slate-400 text-sm">' + job.location + '</span>' : ''}
+            \${job.remote_type ? '<span class="bg-emerald-900 text-emerald-300 text-xs px-2 py-1 rounded-full">' + job.remote_type.replace('_',' ') + '</span>' : ''}
+            \${job.employment_type ? '<span class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded-full">' + job.employment_type.replace('_',' ') + '</span>' : ''}
+            \${job.seniority ? '<span class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded-full">' + job.seniority + '</span>' : ''}
+          </div>
+          \${job.salary ? '<p class="text-emerald-500 font-bold text-xl mb-4">' + job.salary + '</p>' : ''}
+          \${skillsArr.length ? '<div class="flex flex-wrap gap-2 mb-4">' + skillsArr.map(s => '<span class="bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded">' + s + '</span>').join('') + '</div>' : ''}
+          \${job.description ? '<div class="text-slate-300 mb-6 leading-relaxed text-sm">' + job.description + '</div>' : '<p class="text-slate-500 mb-6">No description available.</p>'}
+          <a href="\${job.url}" target="_blank" rel="noopener"
+             class="inline-block bg-emerald-600 px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 transition">
+            Apply Now
+          </a>
         </div>
       \`;
+      document.getElementById('pagination').innerHTML = '';
     }
 
     function filterCat(cat) { currentCat = cat; currentPage = 1; loadJobs(); }
