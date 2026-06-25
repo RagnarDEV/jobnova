@@ -9,6 +9,7 @@ async function ensureTable(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT, company TEXT, location TEXT,
       url TEXT UNIQUE, description TEXT,
+      salary TEXT, remote_type TEXT, skills TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
@@ -17,58 +18,79 @@ async function ensureTable(env) {
 async function syncJobs(env) {
   await ensureTable(env);
 
-  // jobdatalake correct endpoint
-  const url = "https://jobdatalake.com/api/v1/jobs?per_page=100&remoteType=fully_remote";
-  const response = await fetch(url, {
-    headers: {
-      "Authorization": `Bearer ${env.API_KEY}`,
-      "Content-Type": "application/json"
+  const queries = ["developer","designer","marketing","data","devops","writer","manager"];
+  let totalCount = 0;
+
+  for (const q of queries) {
+    const apiUrl = `https://api.jobdatalake.com/v1/jobs?q=${q}&per_page=50&remoteType=fully_remote`;
+    const response = await fetch(apiUrl, {
+      headers: { "X-API-Key": env.API_KEY }
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`API Error ${response.status} for query "${q}": ${text}`);
     }
-  });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`API Error ${response.status}: ${text}`);
-  }
+    const data = await response.json();
+    const jobs = Array.isArray(data) ? data : (data.jobs || data.results || data.data || []);
 
-  const data = await response.json();
-  // jobdatalake returns { jobs: [...] } or { results: [...] } or array
-  const jobs = Array.isArray(data) ? data : (data.jobs || data.results || data.data || []);
-
-  let count = 0;
-  for (const job of jobs) {
-    const title = (job.title || job.job_title || "").toLowerCase();
-    if (KEYWORDS.some(k => title.includes(k))) {
+    for (const job of jobs) {
       try {
         await env.DB.prepare(
-          `INSERT OR IGNORE INTO jobs (title, company, location, url, description)
-           VALUES (?, ?, ?, ?, ?)`
+          `INSERT OR IGNORE INTO jobs (title, company, location, url, description, salary, remote_type, skills)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
         ).bind(
           job.title || "Unknown",
           job.company || job.company_name || "Company",
           job.location || job.city || "Remote",
-          job.url || job.apply_url || job.link || "",
-          job.description || job.summary || "No description."
+          job.url || job.apply_url || job.job_url || "",
+          job.description || job.summary || "",
+          job.salary || job.salary_range || "",
+          job.remote_type || job.remoteType || "Remote",
+          JSON.stringify(job.skills || job.required_skills || [])
         ).run();
-        count++;
+        totalCount++;
       } catch(e) {}
     }
   }
-  return { count, total: jobs.length };
+  return { count: totalCount, queries: queries.length };
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    // Create table on every cold start (safe, IF NOT EXISTS)
     await ensureTable(env);
 
     if (url.pathname === "/api/jobs") {
-      const { results } = await env.DB.prepare(
-        "SELECT * FROM jobs ORDER BY id DESC LIMIT 100"
-      ).all();
-      return new Response(JSON.stringify(results), {
+      const page = parseInt(url.searchParams.get("page") || "1");
+      const limit = 20;
+      const offset = (page - 1) * limit;
+      const category = url.searchParams.get("category") || "";
+      const search = url.searchParams.get("search") || "";
+
+      let query = "SELECT * FROM jobs";
+      const conditions = [];
+      const params = [];
+
+      if (category) {
+        conditions.push("LOWER(title) LIKE ?");
+        params.push(`%${category}%`);
+      }
+      if (search) {
+        conditions.push("(LOWER(title) LIKE ? OR LOWER(company) LIKE ?)");
+        params.push(`%${search.toLowerCase()}%`, `%${search.toLowerCase()}%`);
+      }
+
+      if (conditions.length) query += " WHERE " + conditions.join(" AND ");
+      query += ` ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+
+      const { results } = await env.DB.prepare(query).bind(...params).all();
+      const { results: countRes } = await env.DB.prepare(
+        "SELECT COUNT(*) as total FROM jobs" + (conditions.length ? " WHERE " + conditions.join(" AND ") : "")
+      ).bind(...params).all();
+
+      return new Response(JSON.stringify({ jobs: results, total: countRes[0]?.total || 0, page }), {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
@@ -81,25 +103,134 @@ export default {
         });
       } catch(e) {
         return new Response(JSON.stringify({ success: false, error: e.message }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
+          status: 500, headers: { "Content-Type": "application/json" }
         });
       }
     }
 
-    // Debug endpoint - check DB status
     if (url.pathname === "/api/debug") {
       const { results } = await env.DB.prepare("SELECT COUNT(*) as count FROM jobs").all();
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         jobs_in_db: results[0]?.count || 0,
-        api_key_set: !!env.API_KEY 
+        api_key_set: !!env.API_KEY
       }), { headers: { "Content-Type": "application/json" }});
     }
 
-    // HTML (unchanged for now)
-    return new Response(/* ... HTML كما هو ... */ ``, {
-      headers: { "Content-Type": "text/html" }
-    });
+    // الصفحة الرئيسية - سنحسنها لاحقاً
+    return new Response(`
+<!DOCTYPE html>
+<html class="dark">
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>JobNova - Pro Jobs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="flex">
+    <aside class="w-64 border-r border-slate-800 p-6 hidden md:block h-screen sticky top-0">
+      <h1 class="text-2xl font-bold text-emerald-500 mb-2">JobNova</h1>
+      <p class="text-slate-500 text-xs mb-8">Remote Jobs Board</p>
+      <nav class="space-y-2 text-slate-400">
+        <button onclick="filterCat('')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">🔍 All Jobs</button>
+        <button onclick="filterCat('developer')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">💻 Development</button>
+        <button onclick="filterCat('designer')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">🎨 Design</button>
+        <button onclick="filterCat('marketing')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">📣 Marketing</button>
+        <button onclick="filterCat('data')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">📊 Data</button>
+        <button onclick="filterCat('manager')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-emerald-400 transition">👔 Management</button>
+      </nav>
+    </aside>
+
+    <main class="flex-1 p-4 md:p-6">
+      <div class="max-w-3xl mx-auto">
+        <div class="mb-6">
+          <input id="searchInput" type="text" placeholder="Search jobs or companies..."
+            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            oninput="debounceSearch(this.value)">
+        </div>
+        <div id="stats" class="text-slate-500 text-sm mb-4"></div>
+        <div id="content-area" class="space-y-4"></div>
+        <div id="pagination" class="mt-6 flex justify-center gap-3"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentPage = 1, currentCat = '', currentSearch = '', searchTimeout;
+
+    async function loadJobs() {
+      document.getElementById('content-area').innerHTML = '<div class="text-center text-slate-500 py-12">Loading jobs...</div>';
+      const params = new URLSearchParams({ page: currentPage });
+      if (currentCat) params.set('category', currentCat);
+      if (currentSearch) params.set('search', currentSearch);
+
+      const res = await fetch('/api/jobs?' + params);
+      const data = await res.json();
+
+      document.getElementById('stats').textContent = data.total + ' jobs found';
+
+      if (!data.jobs?.length) {
+        document.getElementById('content-area').innerHTML = '<div class="text-center text-slate-500 py-12">No jobs found.</div>';
+        return;
+      }
+
+      document.getElementById('content-area').innerHTML = data.jobs.map(job => \`
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl hover:border-emerald-500 transition cursor-pointer"
+             onclick="showDetail(\${job.id})">
+          <div class="flex justify-between items-start gap-4">
+            <div>
+              <h2 class="text-lg font-bold text-slate-100">\${job.title}</h2>
+              <p class="text-emerald-400 font-medium mt-1">\${job.company}</p>
+              <p class="text-slate-500 text-sm mt-1">📍 \${job.location} \${job.remote_type ? '· 🌐 ' + job.remote_type : ''}</p>
+            </div>
+            \${job.salary ? '<span class="text-emerald-500 text-sm font-semibold shrink-0">' + job.salary + '</span>' : ''}
+          </div>
+        </div>
+      \`).join('');
+
+      // Pagination
+      const totalPages = Math.ceil(data.total / 20);
+      document.getElementById('pagination').innerHTML = totalPages > 1 ? \`
+        \${currentPage > 1 ? '<button onclick="goPage(' + (currentPage-1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700">← Prev</button>' : ''}
+        <span class="px-4 py-2 text-slate-400">Page \${currentPage} of \${totalPages}</span>
+        \${currentPage < totalPages ? '<button onclick="goPage(' + (currentPage+1) + ')" class="px-4 py-2 bg-slate-800 rounded-lg hover:bg-slate-700">Next →</button>' : ''}
+      \` : '';
+    }
+
+    async function showDetail(id) {
+      const res = await fetch('/api/jobs?page=1');
+      const data = await res.json();
+      const job = data.jobs?.find(j => j.id === id);
+      if (!job) return;
+
+      document.getElementById('content-area').innerHTML = \`
+        <button onclick="loadJobs()" class="text-emerald-500 mb-4 hover:underline">← Back to Jobs</button>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+          <h1 class="text-2xl font-bold mb-2">\${job.title}</h1>
+          <p class="text-emerald-400 font-semibold mb-1">\${job.company}</p>
+          <p class="text-slate-400 mb-4">📍 \${job.location}</p>
+          \${job.salary ? '<p class="text-emerald-500 font-bold mb-4">💰 ' + job.salary + '</p>' : ''}
+          <div class="text-slate-300 mb-6 leading-relaxed">\${job.description || 'No description available.'}</div>
+          <a href="\${job.url}" target="_blank" class="inline-block bg-emerald-600 px-8 py-3 rounded-xl font-bold hover:bg-emerald-500 transition">Apply Now →</a>
+        </div>
+      \`;
+    }
+
+    function filterCat(cat) {
+      currentCat = cat; currentPage = 1; loadJobs();
+    }
+
+    function debounceSearch(val) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => { currentSearch = val; currentPage = 1; loadJobs(); }, 400);
+    }
+
+    function goPage(p) { currentPage = p; loadJobs(); window.scrollTo(0,0); }
+
+    loadJobs();
+  </script>
+</body>
+</html>
+    `, { headers: { "Content-Type": "text/html" } });
   },
 
   async scheduled(event, env, ctx) {
