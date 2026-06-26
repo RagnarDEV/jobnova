@@ -316,10 +316,10 @@ ${NAV_CSS}
 }
 .ad-label{font-size:10px;color:var(--t3);text-align:center;margin-bottom:5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6}
 
-@media(max-width:640px){
+@media(max-width:992px){
   .nav-links .nav-link{display:none}
-  .job-title{font-size:24px}
-  .article-title{font-size:26px}
+  .job-title{font-size:26px;line-height:1.4}
+  .article-title{font-size:28px;line-height:1.4}
   .page,.page-sm{padding:24px 16px 60px}
   .job-hero-hdr,.job-body{padding:20px}
 }
@@ -1002,18 +1002,16 @@ body.light{
 }
 .drawer-close:hover{color:var(--t1);border-color:var(--border)}
 
-@media(max-width:768px){
+@media(max-width:992px){
   .sidebar{display:none}
   .mob-hdr{display:flex}
   .hero{padding:28px 20px 24px}
-  .hero-title{font-size:26px}
+  .hero-title{font-size:28px;line-height:1.5}
   .hero-stats{gap:16px}
   .filters-bar{padding:12px 16px}
   .adv-filters{padding:14px 16px}
   .content-wrap{padding:20px 16px}
-  .job-right{align-items:flex-start}
   .card-inner{padding:16px}
-  /* تحسينات التناسق للهواتف الذكية */
   .card-top{flex-direction:column;gap:12px}
   .job-right{width:100%;flex-direction:row;justify-content:space-between;align-items:center;margin-top:8px;border-top:1px solid var(--border);padding-top:12px}
   .ticker-track{gap:24px}
@@ -1057,7 +1055,6 @@ body.light{
   </div>
 </div>
 
-<!-- NAV -->
 <nav class="nav">
   <a href="/" class="nav-logo">JobNova</a>
   <div class="nav-links">
@@ -1068,7 +1065,6 @@ body.light{
   </div>
 </nav>
 
-<!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker-track">
     <span class="t-item"><span class="t-dot"></span><strong id="tc1">669</strong> Active Jobs</span>
@@ -1088,7 +1084,6 @@ body.light{
   </div>
 </div>
 
-<!-- MOBILE HEADER -->
 <div class="mob-hdr">
   <span class="mob-logo">JobNova</span>
   <div class="mob-btns">
@@ -1099,7 +1094,6 @@ body.light{
 </div>
 
 <div class="app">
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div>
       <span class="logo">JobNova</span>
@@ -1125,7 +1119,6 @@ body.light{
       <a href="/blog" class="nav-btn" style="text-decoration:none"><span class="nav-icon">📝</span>Career Blog</a>
       <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="themeNavIcon">🌙</span>Dark / Light</button>
     </div>
-    <!-- AD SIDEBAR -->
     <div>
       <div style="font-size:9px;color:var(--t3);text-align:center;margin-bottom:5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5">Advertisement</div>
       <div style="display:flex;justify-content:center;overflow:hidden;border-radius:10px;max-height:62px">
@@ -1153,7 +1146,6 @@ body.light{
   </aside>
 
   <main class="main">
-    <!-- JOBS VIEW -->
     <div id="vJobs">
       <div class="hero">
         <div class="hero-eyebrow">
@@ -1212,7 +1204,6 @@ body.light{
           <div class="results-count" id="resultsCount">Loading...</div>
           <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
         </div>
-        <!-- AD BEFORE JOBS -->
         <div class="ad-wrap">
           <div style="text-align:center">
             <div class="ad-label">Advertisement</div>
@@ -1225,7 +1216,6 @@ body.light{
       </div>
     </div>
 
-    <!-- SAVED VIEW -->
     <div id="vSaved" style="display:none">
       <div class="content-wrap" style="max-width:820px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
@@ -1236,7 +1226,6 @@ body.light{
       </div>
     </div>
 
-    <!-- ALERTS VIEW -->
     <div id="vAlerts" style="display:none">
       <div class="content-wrap">
         <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:8px;color:var(--t3);font-size:14px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:28px;transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t3)'">← Back to Jobs</button>
