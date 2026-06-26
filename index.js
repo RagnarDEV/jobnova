@@ -648,8 +648,9 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
         </div>
 
         <!-- إعلان 3: وسط الصفحة الرئيسية قبل الوظائف -->
-        <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center; width: 100%; padding: 12px; background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden;">
-          <script>
+        <!-- إعلان 3: وسط الصفحة الرئيسية قبل الوظائف -->
+   <div style="margin-bottom: 20px; display: flex; justify-content: center; align-items: center; width: 100%; padding: 6px; background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; max-height: 70px;">
+        <script>
             atOptions = {
               'key' : '0ffa7f357eb68570f215b35f87c4ff62',
               'format' : 'iframe',
