@@ -859,13 +859,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
 
       <!-- AD BELOW HERO -->
-      <div style="display:flex;justify-content:center;padding:10px 40px;background:var(--bg2);border-bottom:1px solid var(--border);overflow:hidden;max-height:70px">
-        <div>
-          <div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:3px;letter-spacing:1px;text-transform:uppercase">Advertisement</div>
-          <script async="async" data-cfasync="false" src="https://pl29900952.effectivecpmnetwork.com/240c21d3732d67f320e55d7618105288/invoke.js"></script>
-          <div id="container-240c21d3732d67f320e55d7618105288"></div>
-        </div>
-      </div>
+      
 
       <div class="filters-bar">
         <button class="chip active" onclick="filterCat('','All Jobs')">All Jobs</button>
