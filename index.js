@@ -674,10 +674,10 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
 /* RESPONSIVE FIXES */
 @media(max-width:768px){
   .sidebar{display:none}
-  .mob-hdr{display:flex}
-  /* ticker اصغر على الموبايل */
-  .ticker-wrap{top:102px}
-  .app{min-height:calc(100vh - 138px)}
+  .nav{display:none}
+  .mob-hdr{display:flex;top:0}
+  .ticker-wrap{top:58px}
+  .app{min-height:calc(100vh - 94px)}
   .hero{padding:22px 16px 20px}
   .hero-title{font-size:22px;letter-spacing:-.5px}
   .hero-sub{font-size:13px}
