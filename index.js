@@ -829,7 +829,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
     <!-- AD SIDEBAR -->
     <div style="margin-top:8px">
       <div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase">Advertisement</div>
-      <div style="display:flex;justify-content:center;overflow:hidden;border-radius:12px;max-height:60px">
+      <div style="display:flex;justify-content:center;overflow:hidden;border-radius:10px;max-height:70px">
         <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
         <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
       </div>
