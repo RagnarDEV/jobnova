@@ -571,6 +571,7 @@ const MAIN_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobNova — Find Your Next Remote Job</title>
 <meta name="description" content="JobNova is a modern remote job board with 600+ curated positions in development, design, marketing, data, and more. Updated hourly.">
