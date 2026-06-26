@@ -54,13 +54,122 @@ async function syncJobs(env) {
   return { inserted, skipped, errors: errors.slice(0,3) };
 }
 
-// ── SHARED LAYOUT ──
+// ── SHARED CSS ──
+const SHARED_CSS = `
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#03060F;
+  --bg2:#070D1A;
+  --bg3:#0B1424;
+  --card:#0D1829;
+  --card2:#111F35;
+  --border:#152236;
+  --border2:#1E3352;
+  --accent:#4F8EF7;
+  --accent2:#6EA6FF;
+  --accent3:#3D7BF0;
+  --glow:rgba(79,142,247,.2);
+  --glow2:rgba(79,142,247,.08);
+  --green:#00D68F;
+  --green2:#00B87A;
+  --amber:#FFB547;
+  --red:#FF5C7A;
+  --salary:#00D68F;
+  --purple:#8B5CF6;
+  --t1:#E8F0FF;
+  --t2:#8BA5CC;
+  --t3:#4A6080;
+  --r:16px;
+  --r2:12px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --shadow2:0 8px 40px rgba(0,0,0,.6);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent3)}
+a{color:inherit;text-decoration:none}
+`;
+
+const NAV_CSS = `
+.nav{
+  background:rgba(3,6,15,.85);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;position:sticky;top:0;z-index:200;
+}
+.nav::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent3),transparent);
+  opacity:.4;
+}
+.nav-logo{
+  font-size:22px;font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,#4F8EF7 0%,#A78BFA 50%,#4F8EF7 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:shimmer 4s linear infinite;
+}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{
+  padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--t2);transition:all .2s;border:1px solid transparent;
+}
+.nav-link:hover{color:var(--t1);background:var(--card2);border-color:var(--border2)}
+.nav-cta{
+  background:linear-gradient(135deg,var(--accent3),var(--accent));
+  color:#fff;border-radius:10px;padding:8px 18px;font-size:13px;font-weight:600;
+  transition:all .25s;box-shadow:0 4px 16px rgba(79,142,247,.3);
+  border:1px solid rgba(110,166,255,.2);
+}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(79,142,247,.45)}
+`;
+
+const FOOTER_HTML = (base) => `
+<footer style="border-top:1px solid var(--border);padding:40px 28px;margin-top:40px">
+  <div style="max-width:900px;margin:0 auto">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:32px;margin-bottom:32px">
+      <div>
+        <div style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#4F8EF7,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px">JobNova</div>
+        <div style="font-size:13px;color:var(--t3);max-width:240px;line-height:1.6">The modern remote job board. 600+ curated positions updated every hour.</div>
+      </div>
+      <div style="display:flex;gap:48px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:14px">Platform</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="/" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">Browse Jobs</a>
+            <a href="/blog" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">Career Blog</a>
+            <a href="/feed.rss" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">RSS Feed</a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:14px">Legal</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="/privacy" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">Privacy Policy</a>
+            <a href="/terms" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">Terms of Service</a>
+            <a href="/disclaimer" style="font-size:13px;color:var(--t2);transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t2)'">Disclaimer</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="font-size:12px;color:var(--t3)">© 2026 JobNova. All rights reserved.</div>
+      <div style="font-size:12px;color:var(--t3)">Built with ❤️ for remote job seekers worldwide</div>
+    </div>
+  </div>
+</footer>`;
+
+// ── BASE LAYOUT ──
 function baseLayout(title, description, canonical, ogImage, content, extraHead = '') {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0" />
+<meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${title}</title>
 <meta name="description" content="${description}">
@@ -76,116 +185,143 @@ ${extraHead}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#060B18;--bg2:#0D1525;--card:#111827;--border:#1E2D45;--accent:#2563EB;--accent-l:#3B82F6;--accent-g:rgba(37,99,235,.15);--green:#10B981;--amber:#F59E0B;--salary:#34D399;--t1:#F1F5F9;--t2:#94A3B8;--t3:#475569;--r:14px}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-a{color:inherit;text-decoration:none}
-
-/* NAV */
-.nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
-.nav-logo{font-size:22px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#3B82F6,#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.nav-links{display:flex;align-items:center;gap:8px}
-.nav-link{padding:7px 14px;border-radius:8px;font-size:14px;font-weight:500;color:var(--t2);transition:all .2s;border:1px solid transparent}
-.nav-link:hover{color:var(--t1);background:rgba(255,255,255,.05)}
-.nav-cta{background:var(--accent);color:#fff;border-radius:8px;padding:7px 16px;font-size:14px;font-weight:600;transition:all .2s}
-.nav-cta:hover{background:var(--accent-l)}
-
-/* PAGE WRAP */
-.page{max-width:860px;margin:0 auto;padding:40px 24px 80px}
-.page-sm{max-width:680px;margin:0 auto;padding:40px 24px 80px}
-
-/* BREADCRUMB */
-.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t3);margin-bottom:28px;flex-wrap:wrap}
-.breadcrumb a{color:var(--accent-l);transition:color .2s}
-.breadcrumb a:hover{color:var(--t1)}
-.breadcrumb span{color:var(--t3)}
+${SHARED_CSS}
+${NAV_CSS}
+.page{max-width:880px;margin:0 auto;padding:44px 24px 80px}
+.page-sm{max-width:700px;margin:0 auto;padding:44px 24px 80px}
+.breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t3);margin-bottom:32px;flex-wrap:wrap}
+.breadcrumb a{color:var(--accent2);transition:color .2s}.breadcrumb a:hover{color:var(--t1)}
 
 /* JOB PAGE */
-.job-page-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:24px}
-.job-page-hdr{padding:32px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,rgba(37,99,235,.05),transparent)}
-.job-page-co-row{display:flex;align-items:center;gap:16px;margin-bottom:20px}
-.job-page-logo{width:72px;height:72px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0}
-.job-page-logo img{width:100%;height:100%;object-fit:contain;padding:8px}
-.job-page-co-name{font-size:17px;font-weight:700;color:var(--accent-l);margin-bottom:3px}
-.job-page-co-loc{font-size:13px;color:var(--t3)}
-.job-page-title{font-size:30px;font-weight:900;letter-spacing:-.5px;margin-bottom:16px;line-height:1.2}
-.job-page-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
-.job-page-salary{font-size:24px;font-weight:800;color:var(--salary);margin-bottom:4px}
-.job-page-body{padding:32px}
-.section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
-.skills-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
-.skill-tag{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.15);color:var(--accent-l);font-size:13px;padding:5px 12px;border-radius:8px;font-weight:500}
-.desc-wrap{font-size:15px;color:var(--t2);line-height:1.85;margin-bottom:32px;white-space:pre-line}
-.apply-btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;padding:15px 36px;border-radius:12px;font-size:17px;font-weight:700;text-decoration:none;transition:all .2s;box-shadow:0 4px 20px rgba(37,99,235,.3)}
-.apply-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(37,99,235,.4)}
+.job-hero{
+  background:linear-gradient(135deg,var(--card) 0%,var(--bg3) 100%);
+  border:1px solid var(--border2);border-radius:20px;overflow:hidden;
+  margin-bottom:24px;position:relative;
+}
+.job-hero::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent3),var(--purple),var(--accent));
+}
+.job-hero-hdr{padding:36px}
+.job-hero-co-row{display:flex;align-items:center;gap:18px;margin-bottom:22px}
+.job-logo-wrap{
+  width:76px;height:76px;border-radius:16px;
+  background:var(--bg2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:800;color:var(--accent2);
+  overflow:hidden;flex-shrink:0;
+  box-shadow:0 4px 20px rgba(0,0,0,.3);
+}
+.job-logo-wrap img{width:100%;height:100%;object-fit:contain;padding:10px}
+.job-co-name{font-size:18px;font-weight:700;color:var(--accent2);margin-bottom:4px}
+.job-co-loc{font-size:13px;color:var(--t3);display:flex;align-items:center;gap:6px}
+.job-title{font-size:32px;font-weight:900;letter-spacing:-.8px;line-height:1.2;margin-bottom:18px;color:var(--t1)}
+.job-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.job-salary{
+  font-size:26px;font-weight:800;color:var(--salary);
+  display:flex;align-items:center;gap:10px;
+}
+.job-salary-icon{font-size:20px}
+.job-body{padding:36px;border-top:1px solid var(--border)}
+.sec-label{
+  font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--t3);margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border);margin-left:8px}
+.skills-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+.skill-tag{
+  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  color:var(--accent2);font-size:13px;padding:5px 14px;border-radius:8px;
+  font-weight:500;transition:all .2s;
+}
+.skill-tag:hover{background:rgba(79,142,247,.2);border-color:var(--accent)}
+.desc-wrap{
+  font-size:15px;color:var(--t2);line-height:1.9;margin-bottom:32px;
+  white-space:pre-line;
+}
+.apply-big{
+  display:inline-flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,var(--accent3),var(--accent));
+  color:#fff;padding:16px 40px;border-radius:14px;font-size:17px;font-weight:700;
+  text-decoration:none;transition:all .25s;
+  box-shadow:0 4px 24px rgba(79,142,247,.4);
+  border:1px solid rgba(110,166,255,.2);
+}
+.apply-big:hover{transform:translateY(-2px);box-shadow:0 8px 36px rgba(79,142,247,.55)}
 
 /* TAGS */
-.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500}
-.tag-remote{background:rgba(16,185,129,.1);color:#10B981;border:1px solid rgba(16,185,129,.2)}
-.tag-hybrid{background:rgba(245,158,11,.1);color:#F59E0B;border:1px solid rgba(245,158,11,.2)}
-.tag-onsite{background:rgba(148,163,184,.08);color:var(--t2);border:1px solid var(--border)}
-.tag-type{background:rgba(148,163,184,.08);color:var(--t2);border:1px solid var(--border)}
-.tag-new{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:.5px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:20px;font-weight:600}
+.tag-remote{background:rgba(0,214,143,.1);color:var(--green);border:1px solid rgba(0,214,143,.25)}
+.tag-hybrid{background:rgba(255,181,71,.1);color:var(--amber);border:1px solid rgba(255,181,71,.25)}
+.tag-onsite{background:rgba(139,165,204,.08);color:var(--t2);border:1px solid var(--border2)}
+.tag-type{background:rgba(139,165,204,.08);color:var(--t2);border:1px solid var(--border2)}
+.tag-new{
+  background:linear-gradient(135deg,rgba(0,214,143,.2),rgba(0,214,143,.1));
+  color:var(--green);border:1px solid rgba(0,214,143,.3);
+  font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:1px;
+  animation:pulse-green 2s ease-in-out infinite;
+}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.3)}50%{box-shadow:0 0 0 4px rgba(0,214,143,.1)}}
+.tag-hot{background:linear-gradient(135deg,rgba(255,92,122,.2),rgba(255,92,122,.1));color:var(--red);border:1px solid rgba(255,92,122,.3);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:1px}
+.tag-featured{background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(139,92,246,.1));color:var(--purple);border:1px solid rgba(139,92,246,.3);font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:1px}
 
-/* RELATED JOBS */
-.related-title{font-size:18px;font-weight:800;margin-bottom:16px}
+/* RELATED */
+.related-title{font-size:19px;font-weight:800;margin-bottom:16px;color:var(--t1)}
 .related-grid{display:flex;flex-direction:column;gap:10px}
-.related-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;transition:all .2s;text-decoration:none}
-.related-card:hover{border-color:var(--accent);transform:translateY(-1px)}
-.related-logo{width:40px;height:40px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0}
-.related-logo img{width:100%;height:100%;object-fit:contain;padding:5px}
+.related-card{
+  background:var(--card);border:1px solid var(--border2);border-radius:14px;
+  padding:16px 20px;display:flex;align-items:center;gap:16px;
+  transition:all .25s;text-decoration:none;
+}
+.related-card:hover{border-color:var(--accent3);background:var(--card2);transform:translateX(4px)}
+.related-logo{width:42px;height:42px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent2);overflow:hidden;flex-shrink:0}
+.related-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
 .related-info{flex:1;min-width:0}
-.related-job-title{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.related-co{font-size:13px;color:var(--accent-l)}
-.related-salary{font-size:13px;font-weight:700;color:var(--salary);white-space:nowrap}
+.related-jt{font-size:14px;font-weight:700;color:var(--t1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.related-co{font-size:12px;color:var(--accent2)}
+.related-sal{font-size:13px;font-weight:700;color:var(--salary);white-space:nowrap}
 
-/* BLOG PAGE */
-.article-cat{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent-l);margin-bottom:12px}
-.article-title{font-size:34px;font-weight:900;letter-spacing:-.5px;line-height:1.2;margin-bottom:16px}
-.article-meta{font-size:13px;color:var(--t3);display:flex;gap:16px;margin-bottom:32px;flex-wrap:wrap}
-.article-body{font-size:16px;color:var(--t2);line-height:1.85}
-.article-body h2{font-size:21px;font-weight:700;margin:32px 0 12px;color:var(--t1)}
-.article-body p{margin-bottom:16px}
-.article-body ul{padding-left:22px;margin-bottom:16px}
-.article-body ul li{margin-bottom:8px}
+/* BLOG */
+.article-cat{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:14px}
+.article-title{font-size:36px;font-weight:900;letter-spacing:-.8px;line-height:1.2;margin-bottom:16px;color:var(--t1)}
+.article-meta{font-size:13px;color:var(--t3);display:flex;gap:18px;margin-bottom:36px;flex-wrap:wrap}
+.article-body{font-size:16px;color:var(--t2);line-height:1.9}
+.article-body h2{font-size:22px;font-weight:700;margin:36px 0 14px;color:var(--t1);padding-left:16px;border-left:3px solid var(--accent)}
+.article-body p{margin-bottom:18px}
+.article-body ul{padding-left:22px;margin-bottom:18px}
+.article-body ul li{margin-bottom:10px}
 .article-body strong{color:var(--t1)}
 
 /* STATIC */
-.static-title{font-size:30px;font-weight:800;margin-bottom:8px}
-.static-date{font-size:13px;color:var(--t3);margin-bottom:32px}
-.static-body h2{font-size:19px;font-weight:700;margin:28px 0 12px;color:var(--t1)}
-.static-body p{font-size:15px;color:var(--t2);line-height:1.8;margin-bottom:12px}
-.static-body ul{padding-left:20px;margin-bottom:12px}
-.static-body ul li{font-size:15px;color:var(--t2);line-height:1.8;margin-bottom:6px}
-.static-body a{color:var(--accent-l)}
+.static-title{font-size:32px;font-weight:900;margin-bottom:8px;color:var(--t1)}
+.static-date{font-size:13px;color:var(--t3);margin-bottom:36px}
+.static-body h2{font-size:20px;font-weight:700;margin:32px 0 14px;color:var(--t1)}
+.static-body p{font-size:15px;color:var(--t2);line-height:1.8;margin-bottom:14px}
+.static-body ul{padding-left:22px;margin-bottom:14px}
+.static-body ul li{font-size:15px;color:var(--t2);line-height:1.8;margin-bottom:8px}
+.static-body a{color:var(--accent2)}
 
-/* BACK BTN */
-.back-link{display:inline-flex;align-items:center;gap:8px;color:var(--t3);font-size:14px;font-weight:500;transition:color .2s;margin-bottom:28px;text-decoration:none}
-.back-link:hover{color:var(--accent-l)}
-
-/* FOOTER */
-.footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center}
-.footer-inner{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.footer-logo{font-size:18px;font-weight:900;background:linear-gradient(135deg,#3B82F6,#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.footer-links{display:flex;gap:20px;flex-wrap:wrap}
-.footer-link{font-size:13px;color:var(--t3);transition:color .2s}
-.footer-link:hover{color:var(--t2)}
-.footer-copy{font-size:12px;color:var(--t3)}
+.back-link{
+  display:inline-flex;align-items:center;gap:8px;color:var(--t3);
+  font-size:14px;font-weight:500;transition:color .2s;
+  margin-bottom:32px;text-decoration:none;
+}
+.back-link:hover{color:var(--accent2)}
 
 /* AD */
-.ad-wrap{display:flex;justify-content:center;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:20px 0}
-.ad-label{font-size:10px;color:var(--t3);text-align:center;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
+.ad-wrap{
+  display:flex;justify-content:center;align-items:center;
+  padding:10px;overflow:hidden;margin:20px 0;
+  max-height:80px;
+}
+.ad-label{font-size:10px;color:var(--t3);text-align:center;margin-bottom:5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.6}
 
 @media(max-width:640px){
   .nav-links .nav-link{display:none}
-  .job-page-title{font-size:22px}
-  .article-title{font-size:24px}
+  .job-title{font-size:24px}
+  .article-title{font-size:26px}
   .page,.page-sm{padding:24px 16px 60px}
-  .job-page-hdr,.job-page-body{padding:20px}
-  .footer-inner{flex-direction:column;text-align:center}
-  .footer-links{justify-content:center}
+  .job-hero-hdr,.job-body{padding:20px}
 }
 </style>
 </head>
@@ -200,349 +336,187 @@ a{color:inherit;text-decoration:none}
   </div>
 </nav>
 ${content}
-<footer class="footer">
-  <div class="footer-inner">
-    <span class="footer-logo">JobNova</span>
-    <div class="footer-links">
-      <a href="/" class="footer-link">Home</a>
-      <a href="/blog" class="footer-link">Blog</a>
-      <a href="/privacy" class="footer-link">Privacy Policy</a>
-      <a href="/terms" class="footer-link">Terms of Service</a>
-      <a href="/disclaimer" class="footer-link">Disclaimer</a>
-      <a href="/feed.rss" class="footer-link">RSS Feed</a>
-    </div>
-    <span class="footer-copy">© 2026 JobNova. All rights reserved.</span>
-  </div>
-</footer>
+${FOOTER_HTML('')}
 </body>
 </html>`;
 }
 
-// ── LOGO HTML (server-side) ──
-function logoImgHtml(company, size = '72px', cls = 'job-page-logo') {
-  const slug = (company || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+// ── LOGO ──
+function logoImgHtml(company, size='72px', cls='job-logo-wrap') {
+  const slug = (company||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const domain = slug + '.com';
-  const ini = (company || '?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-  const fs = Math.round(parseInt(size) * 0.35) + 'px';
+  const ini = (company||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+  const fs = Math.round(parseInt(size)*.35)+'px';
   return `<div class="${cls}" style="width:${size};height:${size}">
     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="${company}"
-      style="width:100%;height:100%;object-fit:contain;padding:6px"
+      style="width:100%;height:100%;object-fit:contain;padding:8px"
       onerror="this.onerror=null;this.src='https://icons.duckduckgo.com/ip3/${domain}.ico';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex'}">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${fs};font-weight:800;color:#3B82F6">${ini}</span>
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${fs};font-weight:800;color:#4F8EF7">${ini}</span>
   </div>`;
 }
 
 function remoteTagHtml(t) {
   if (!t) return '';
   const m = {fully_remote:['tag-remote','🌐 Remote'],hybrid:['tag-hybrid','🏢 Hybrid'],on_site:['tag-onsite','📍 On-site'],onsite:['tag-onsite','📍 On-site']};
-  const [cls, lbl] = m[t] || ['tag-onsite', t.replace(/_/g,' ')];
+  const [cls,lbl] = m[t] || ['tag-onsite',t.replace(/_/g,' ')];
   return `<span class="tag ${cls}">${lbl}</span>`;
 }
 
 // ── JOB PAGE ──
 function renderJobPage(job, related, base) {
   let skills = [];
-  try { skills = JSON.parse(job.skills || '[]'); } catch(e) {}
-  const isNew = job.created_at && Date.now() - new Date(job.created_at).getTime() < 86400000;
+  try { skills = JSON.parse(job.skills||'[]'); } catch(e) {}
+  const isNew = job.created_at && Date.now()-new Date(job.created_at).getTime()<86400000;
+  const isHot = job.salary && parseInt(job.salary.replace(/\D/g,'').slice(0,3)) >= 150;
   const canonical = `${base}/job/${job.id}`;
   const desc = job.description && job.description.length > 20
-    ? job.description.slice(0, 160).replace(/\n/g,' ') + '...'
-    : `${job.title} at ${job.company}. ${job.location || 'Remote'}${job.salary ? ' — ' + job.salary : ''}. Apply now on JobNova.`;
+    ? job.description.slice(0,160).replace(/\n/g,' ')+'...'
+    : `${job.title} at ${job.company}. ${job.location||'Remote'}${job.salary?' — '+job.salary:''}. Apply now on JobNova.`;
 
-  const schemaOrg = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "JobPosting",
-    "title": job.title,
-    "description": job.description || desc,
-    "hiringOrganization": { "@type": "Organization", "name": job.company },
-    "jobLocation": { "@type": "Place", "address": job.location || "Remote" },
-    "employmentType": job.employment_type ? job.employment_type.toUpperCase().replace('_',' ') : "FULL_TIME",
-    "datePosted": job.created_at ? new Date(job.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    "url": canonical,
-    "directApply": true,
-    ...(job.salary ? { "baseSalary": { "@type": "MonetaryAmount", "currency": "USD", "value": { "@type": "QuantitativeValue", "value": job.salary } } } : {})
+  const schema = JSON.stringify({
+    "@context":"https://schema.org","@type":"JobPosting",
+    "title":job.title,"description":job.description||desc,
+    "hiringOrganization":{"@type":"Organization","name":job.company},
+    "jobLocation":{"@type":"Place","address":job.location||"Remote"},
+    "employmentType":job.employment_type?job.employment_type.toUpperCase().replace('_',' '):"FULL_TIME",
+    "datePosted":job.created_at?new Date(job.created_at).toISOString().split('T')[0]:new Date().toISOString().split('T')[0],
+    "url":canonical,"directApply":true,
+    ...(job.salary?{"baseSalary":{"@type":"MonetaryAmount","currency":"USD","value":{"@type":"QuantitativeValue","value":job.salary}}}:{})
   });
 
   const content = `
 <div class="page">
   <div class="breadcrumb">
-    <a href="/">JobNova</a>
-    <span>›</span>
-    <a href="/">Jobs</a>
-    <span>›</span>
+    <a href="/">JobNova</a><span>›</span>
+    <a href="/">Jobs</a><span>›</span>
     <span>${job.title}</span>
   </div>
-
-  <div class="job-page-card">
-    <div class="job-page-hdr">
-      <div class="job-page-co-row">
-        ${logoImgHtml(job.company, '72px', 'job-page-logo')}
+  <div class="job-hero">
+    <div class="job-hero-hdr">
+      <div class="job-hero-co-row">
+        ${logoImgHtml(job.company,'76px','job-logo-wrap')}
         <div>
-          <div class="job-page-co-name">${job.company}</div>
-          <div class="job-page-co-loc">${job.location || 'Remote'}</div>
+          <div class="job-co-name">${job.company}</div>
+          <div class="job-co-loc">📍 ${job.location||'Remote'}</div>
         </div>
       </div>
-      <h1 class="job-page-title">${job.title}</h1>
-      <div class="job-page-chips">
+      <h1 class="job-title">${job.title}</h1>
+      <div class="job-chips">
         ${remoteTagHtml(job.remote_type)}
-        ${job.employment_type ? `<span class="tag tag-type">${job.employment_type.replace(/_/g,' ')}</span>` : ''}
-        ${job.seniority ? `<span class="tag tag-type">${job.seniority}</span>` : ''}
-        ${isNew ? '<span class="tag-new">NEW</span>' : ''}
+        ${job.employment_type?`<span class="tag tag-type">${job.employment_type.replace(/_/g,' ')}</span>`:''}
+        ${job.seniority?`<span class="tag tag-type">${job.seniority}</span>`:''}
+        ${isNew?'<span class="tag tag-new">✦ NEW</span>':''}
+        ${isHot?'<span class="tag tag-hot">🔥 HOT</span>':''}
       </div>
-      ${job.salary ? `<div class="job-page-salary">${job.salary}</div>` : ''}
+      ${job.salary?`<div class="job-salary"><span class="job-salary-icon">💰</span>${job.salary}<span style="font-size:14px;font-weight:500;color:var(--t3);margin-left:6px">/ year</span></div>`:''}
     </div>
-
-    <div class="job-page-body">
-      ${skills.length ? `
-        <div class="section-label">Required Skills</div>
+    <div class="job-body">
+      ${skills.length?`
+        <div class="sec-label">Required Skills</div>
         <div class="skills-wrap">${skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
-      ` : ''}
-
-      <div class="section-label">Job Description</div>
-      <div class="desc-wrap">${job.description && job.description.length > 20
-        ? job.description
-        : 'Full description available on the company website. Click Apply Now to view complete details and submit your application.'
-      }</div>
-
-      <!-- AD IN JOB PAGE -->
-      <div class="ad-wrap">
-        <div>
-          <div class="ad-label">Advertisement</div>
-          <script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};</script>
-          <script src="https://www.highperformanceformat.com/f9df5bf8e15c630ee01718f64c6edfb3/invoke.js"></script>
-        </div>
+      `:''}
+      <div class="sec-label">About the Role</div>
+      <div class="desc-wrap">${job.description&&job.description.length>20?job.description:'Full description available on the company website. Click Apply Now to view complete details and submit your application.'}</div>
+      <div class="ad-wrap" style="margin-bottom:28px">
+        <div><div class="ad-label">Advertisement</div>
+        <script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};</script>
+        <script src="https://www.highperformanceformat.com/f9df5bf8e15c630ee01718f64c6edfb3/invoke.js"></script></div>
       </div>
-
-      <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="apply-btn">
-        Apply Now →
-      </a>
+      <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="apply-big">Apply Now →</a>
     </div>
   </div>
-
-  ${related.length ? `
-    <div class="related-title">Similar Jobs</div>
+  ${related.length?`
+    <div class="related-title">You Might Also Like</div>
     <div class="related-grid">
-      ${related.map(r => `
+      ${related.map(r=>`
         <a href="/job/${r.id}" class="related-card">
-          ${logoImgHtml(r.company, '40px', 'related-logo')}
+          ${logoImgHtml(r.company,'42px','related-logo')}
           <div class="related-info">
-            <div class="related-job-title">${r.title}</div>
+            <div class="related-jt">${r.title}</div>
             <div class="related-co">${r.company}</div>
           </div>
-          ${r.salary ? `<div class="related-salary">${r.salary}</div>` : ''}
-        </a>
-      `).join('')}
-    </div>
-  ` : ''}
-
-  <!-- AD BOTTOM -->
+          ${r.salary?`<div class="related-sal">${r.salary}</div>`:''}
+          <span style="color:var(--t3);font-size:18px">›</span>
+        </a>`).join('')}
+    </div>`:''}
   <div class="ad-wrap" style="margin-top:32px">
-    <div>
-      <div class="ad-label">Advertisement</div>
-      <script async="async" data-cfasync="false" src="https://pl29900952.effectivecpmnetwork.com/240c21d3732d67f320e55d7618105288/invoke.js"></script>
-      <div id="container-240c21d3732d67f320e55d7618105288"></div>
-    </div>
+    <div><div class="ad-label">Advertisement</div>
+    <script async="async" data-cfasync="false" src="https://pl29900952.effectivecpmnetwork.com/240c21d3732d67f320e55d7618105288/invoke.js"></script>
+    <div id="container-240c21d3732d67f320e55d7618105288"></div></div>
   </div>
 </div>`;
-
-  return baseLayout(
-    `${job.title} at ${job.company} — JobNova`,
-    desc,
-    canonical,
-    '',
-    content,
-    `<script type="application/ld+json">${schemaOrg}</script>`
-  );
+  return baseLayout(`${job.title} at ${job.company} — JobNova`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script>`);
 }
 
-// ── BLOG POSTS DATA ──
+// ── BLOG POSTS ──
 const BLOG_POSTS = [
-  { id:1, cat:"Career Advice", title:"10 Skills Every Remote Developer Must Have in 2026", excerpt:"Remote work has changed what employers look for. Beyond technical skills, these soft skills separate top candidates from the rest.", date:"June 20, 2026", readTime:"5 min read",
-    body:`<p>The remote job market in 2026 is more competitive than ever.</p><h2>1. Asynchronous Communication</h2><p>Remote teams operate across time zones. The ability to write clear, concise messages is as important as coding ability.</p><h2>2. Self-Management & Discipline</h2><p>Without a manager physically present, you need strong self-management. Tools like Notion and Linear are your best friends.</p><h2>3. Deep Work Focus</h2><p>Top remote developers cultivate 2-4 hour blocks of uninterrupted deep work.</p><h2>4. Proactive Visibility</h2><p>Remote workers must proactively share their progress and flag blockers early.</p><h2>5. Cloud & DevOps Literacy</h2><p>Even frontend developers benefit from understanding Docker and CI/CD pipelines.</p><h2>6. Strong Git Practices</h2><p>Clean commit history and descriptive PR descriptions are critical when your team never meets in person.</p><h2>7. Time Zone Awareness</h2><p>Always specify time zones when scheduling. Use UTC as your mental anchor.</p><h2>8. Written Documentation</h2><p>Remote teams live and die by their documentation.</p><h2>9. Video Communication Presence</h2><p>Good lighting and a decent microphone make a bigger impression than you might expect.</p><h2>10. Continuous Learning Mindset</h2><p>Developers who embrace new tools stay ahead of the curve.</p>`
-  },
-  { id:2, cat:"Salary Guide", title:"Remote Developer Salaries in 2026: What You Should Be Earning", excerpt:"Salary data from 600+ remote job listings reveals what companies are actually paying.", date:"June 18, 2026", readTime:"7 min read",
-    body:`<p>Based on our analysis of 600+ active remote job listings, here's what the market is paying in 2026.</p><h2>Frontend Developer</h2><ul><li><strong>Junior:</strong> $55k – $85k</li><li><strong>Mid-level:</strong> $85k – $130k</li><li><strong>Senior:</strong> $130k – $200k</li></ul><h2>Backend Developer</h2><ul><li><strong>Junior:</strong> $60k – $90k</li><li><strong>Mid-level:</strong> $90k – $145k</li><li><strong>Senior:</strong> $145k – $220k</li></ul><h2>Data Scientist / ML Engineer</h2><ul><li><strong>Mid-level:</strong> $100k – $160k</li><li><strong>Senior:</strong> $160k – $240k</li></ul><h2>Negotiation Tips</h2><p>Always negotiate. The first offer is rarely the best offer.</p>`
-  },
-  { id:3, cat:"Job Search", title:"How to Land a Remote Job in 30 Days", excerpt:"A step-by-step system that has helped thousands of developers secure remote offers.", date:"June 15, 2026", readTime:"9 min read",
-    body:`<p>This playbook breaks landing a remote job into a focused 30-day system.</p><h2>Week 1: Foundation</h2><p>Define your target role. Polish your resume — one page, quantify everything.</p><h2>Week 2: Volume with Quality</h2><p>Apply to 5-10 jobs per day with personalized applications.</p><h2>Week 3: Parallel Tracks</h2><p>Work on your portfolio while applications are processing.</p><h2>Week 4: Interview Preparation</h2><p>Prepare for behavioral questions (STAR method), system design, and live coding.</p><h2>The Numbers Game</h2><p>Expect: 100 applications → 15 phone screens → 5 technical rounds → 2 offers.</p>`
-  },
-  { id:4, cat:"Industry Trends", title:"The State of Remote Work in 2026: What's Changed", excerpt:"Remote work has matured. The hype is gone, but the opportunity is bigger than ever.", date:"June 10, 2026", readTime:"6 min read",
-    body:`<p>Remote work has reached equilibrium in 2026.</p><h2>What's Changed Since 2024</h2><p>Fully remote roles have stabilized at 30-35% of white-collar job postings.</p><h2>Who's Hiring Remote in 2026</h2><p>Shopify, GitLab, Automattic, and hundreds of SaaS companies continue to hire globally.</p><h2>AI's Impact</h2><p>"AI integration" and "LLM fine-tuning" appear in a growing percentage of job listings.</p>`
-  },
-  { id:5, cat:"Tools & Productivity", title:"The Remote Developer's Essential Toolkit for 2026", excerpt:"The apps, workflows, and hardware setups that top remote developers swear by.", date:"June 5, 2026", readTime:"5 min read",
-    body:`<p>The right tools make remote work easier and more professional.</p><h2>Communication</h2><ul><li><strong>Slack / Discord:</strong> Async team chat</li><li><strong>Loom:</strong> Quick video explanations</li><li><strong>Notion:</strong> Documentation</li></ul><h2>Development</h2><ul><li><strong>GitHub Copilot / Cursor:</strong> AI pair programming</li><li><strong>Linear:</strong> Project management</li><li><strong>Cloudflare Workers:</strong> Zero-ops deployment</li></ul>`
-  },
-  { id:6, cat:"Interview Prep", title:"Remote Technical Interviews: What's Different and How to Prepare", excerpt:"Remote interviews have their own unique challenges. Here's how to ace them.", date:"June 1, 2026", readTime:"6 min read",
-    body:`<p>Companies screen for additional signals beyond pure coding ability for remote roles.</p><h2>The Setup Check</h2><p>Test your camera, mic, internet backup, and coding environment the evening before.</p><h2>Communicating While You Code</h2><p>Narrate your thinking continuously — "I'm considering using a hash map here because..." beats silence.</p><h2>Remote-Specific Questions</h2><ul><li>"How do you handle a blocker when your team lead is in a different time zone?"</li><li>"How do you stay productive working from home?"</li></ul>`
-  }
+  {id:1,cat:"Career Advice",title:"10 Skills Every Remote Developer Must Have in 2026",excerpt:"Remote work has changed what employers look for. Beyond technical skills, these soft skills separate top candidates from the rest.",date:"June 20, 2026",readTime:"5 min read",
+    body:`<p>The remote job market in 2026 is more competitive than ever.</p><h2>1. Asynchronous Communication</h2><p>Remote teams operate across time zones. The ability to write clear, concise messages is as important as coding ability.</p><h2>2. Self-Management & Discipline</h2><p>Tools like Notion and Linear are your best friends.</p><h2>3. Deep Work Focus</h2><p>Top remote developers cultivate 2-4 hour blocks of uninterrupted work.</p><h2>4. Proactive Visibility</h2><p>Share your progress proactively and flag blockers early.</p><h2>5. Cloud & DevOps Literacy</h2><p>Even frontend developers benefit from understanding Docker and CI/CD.</p><h2>6. Strong Git Practices</h2><p>Clean commit history and descriptive PRs are critical.</p><h2>7. Time Zone Awareness</h2><p>Always specify time zones when scheduling.</p><h2>8. Written Documentation</h2><p>Remote teams live and die by their docs.</p><h2>9. Video Communication Presence</h2><p>Good lighting and a decent microphone matter more than you think.</p><h2>10. Continuous Learning Mindset</h2><p>Developers who embrace new tools stay ahead of the curve.</p>`},
+  {id:2,cat:"Salary Guide",title:"Remote Developer Salaries in 2026: What You Should Be Earning",excerpt:"Salary data from 600+ remote job listings reveals what companies are actually paying.",date:"June 18, 2026",readTime:"7 min read",
+    body:`<p>Based on our analysis of 600+ active listings, here's the 2026 market:</p><h2>Frontend Developer</h2><ul><li><strong>Junior:</strong> $55k–$85k</li><li><strong>Mid:</strong> $85k–$130k</li><li><strong>Senior:</strong> $130k–$200k</li></ul><h2>Backend Developer</h2><ul><li><strong>Junior:</strong> $60k–$90k</li><li><strong>Mid:</strong> $90k–$145k</li><li><strong>Senior:</strong> $145k–$220k</li></ul><h2>Data Scientist / ML</h2><ul><li><strong>Mid:</strong> $100k–$160k</li><li><strong>Senior:</strong> $160k–$240k</li></ul><h2>Negotiation Tips</h2><p>Always negotiate. The first offer is rarely the best offer.</p>`},
+  {id:3,cat:"Job Search",title:"How to Land a Remote Job in 30 Days",excerpt:"A step-by-step system that has helped thousands of developers secure remote offers.",date:"June 15, 2026",readTime:"9 min read",
+    body:`<p>This playbook breaks the job search into a focused 30-day system.</p><h2>Week 1: Foundation</h2><p>Define your target role. Polish your resume — one page, quantify everything.</p><h2>Week 2: Volume with Quality</h2><p>Apply to 5-10 jobs per day with personalized applications.</p><h2>Week 3: Parallel Tracks</h2><p>Build your portfolio while applications process.</p><h2>Week 4: Interview Prep</h2><p>Prepare for STAR method, system design, and live coding.</p><h2>The Numbers Game</h2><p>100 applications → 15 screens → 5 rounds → 2 offers. Stay consistent.</p>`},
+  {id:4,cat:"Industry Trends",title:"The State of Remote Work in 2026: What's Changed",excerpt:"Remote work has matured. The hype is gone, but the opportunity is bigger than ever.",date:"June 10, 2026",readTime:"6 min read",
+    body:`<p>Remote work has reached a new equilibrium in 2026.</p><h2>What's Changed</h2><p>Fully remote roles stabilized at 30-35% of white-collar postings.</p><h2>Who's Hiring</h2><p>Shopify, GitLab, Automattic, and hundreds of SaaS companies continue to hire globally.</p><h2>AI's Impact</h2><p>"AI integration" and "LLM fine-tuning" appear in a growing percentage of listings.</p>`},
+  {id:5,cat:"Tools & Productivity",title:"The Remote Developer's Essential Toolkit for 2026",excerpt:"The apps and workflows that top remote developers swear by.",date:"June 5, 2026",readTime:"5 min read",
+    body:`<p>The right tools make remote work easier and make you look more professional.</p><h2>Communication</h2><ul><li><strong>Slack/Discord:</strong> Async team chat</li><li><strong>Loom:</strong> Video explanations</li><li><strong>Notion:</strong> Documentation</li></ul><h2>Development</h2><ul><li><strong>Cursor/Copilot:</strong> AI pair programming</li><li><strong>Linear:</strong> Project management</li></ul>`},
+  {id:6,cat:"Interview Prep",title:"Remote Technical Interviews: What's Different and How to Prepare",excerpt:"Remote interviews have unique challenges. Here's how to ace them.",date:"June 1, 2026",readTime:"6 min read",
+    body:`<p>Companies screen for more than coding ability in remote interviews.</p><h2>The Setup Check</h2><p>Test your camera, mic, internet backup, and coding environment the night before.</p><h2>Communicate While Coding</h2><p>Narrate your thinking — "I'm considering a hash map here because..." beats silence.</p><h2>Remote-Specific Questions</h2><ul><li>"How do you handle blockers across time zones?"</li><li>"How do you stay productive working from home?"</li></ul>`}
 ];
 
-// ── BLOG INDEX PAGE ──
 function renderBlogIndex(base) {
   const content = `
 <div class="page">
-  <div class="breadcrumb">
-    <a href="/">JobNova</a>
-    <span>›</span>
-    <span>Career Blog</span>
-  </div>
-  <h1 style="font-size:30px;font-weight:900;margin-bottom:8px">📝 Career Blog</h1>
+  <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><span>Blog</span></div>
+  <h1 style="font-size:32px;font-weight:900;margin-bottom:8px;color:var(--t1)">📝 Career Blog</h1>
   <p style="color:var(--t2);font-size:15px;margin-bottom:32px">Insights, salary guides, and career advice for remote job seekers.</p>
-
-  <!-- AD -->
-  <div class="ad-wrap">
-    <div>
-      <div class="ad-label">Advertisement</div>
-      <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
-      <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:24px">
-    ${BLOG_POSTS.map(p => `
-      <a href="/blog/${p.id}" style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:24px;display:block;transition:all .25s;text-decoration:none">
-        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-l);margin-bottom:10px">${p.cat}</div>
-        <div style="font-size:17px;font-weight:700;margin-bottom:10px;line-height:1.4;color:var(--t1)">${p.title}</div>
-        <div style="font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:16px">${p.excerpt}</div>
-        <div style="font-size:12px;color:var(--t3);display:flex;gap:12px"><span>${p.date}</span><span>${p.readTime}</span></div>
-      </a>
-    `).join('')}
+  <div class="ad-wrap"><div><div class="ad-label">Advertisement</div>
+    <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
+    <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
+  </div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-top:28px">
+    ${BLOG_POSTS.map(p=>`
+      <a href="/blog/${p.id}" style="background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:24px;display:block;transition:all .25s;text-decoration:none;position:relative;overflow:hidden" onmouseover="this.style.borderColor='var(--accent3)';this.style.transform='translateY(-3px)'" onmouseout="this.style.borderColor='var(--border2)';this.style.transform='translateY(0)'">
+        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">${p.cat}</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:10px;line-height:1.4;color:var(--t1)">${p.title}</div>
+        <div style="font-size:13px;color:var(--t3);line-height:1.7;margin-bottom:16px">${p.excerpt}</div>
+        <div style="font-size:12px;color:var(--t3);display:flex;gap:14px"><span>📅 ${p.date}</span><span>⏱ ${p.readTime}</span></div>
+      </a>`).join('')}
   </div>
 </div>`;
-
-  return baseLayout(
-    'Career Blog — JobNova',
-    'Insights, salary guides, and career advice for remote job seekers. Updated regularly by the JobNova team.',
-    `${base}/blog`,
-    '', content,
-    `<script type="application/ld+json">${JSON.stringify({"@context":"https://schema.org","@type":"Blog","name":"JobNova Career Blog","url":`${base}/blog`,"description":"Career insights and salary guides for remote job seekers"})}</script>`
-  );
+  return baseLayout('Career Blog — JobNova','Insights and career advice for remote job seekers.',`${base}/blog`,'',content,
+    `<script type="application/ld+json">${JSON.stringify({"@context":"https://schema.org","@type":"Blog","name":"JobNova Career Blog","url":`${base}/blog`})}</script>`);
 }
 
-// ── BLOG ARTICLE PAGE ──
 function renderArticlePage(post, base) {
   const canonical = `${base}/blog/${post.id}`;
-  const schema = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": post.title,
-    "description": post.excerpt,
-    "datePublished": post.date,
-    "author": { "@type": "Organization", "name": "JobNova" },
-    "publisher": { "@type": "Organization", "name": "JobNova", "url": base },
-    "url": canonical
-  });
-
+  const schema = JSON.stringify({"@context":"https://schema.org","@type":"Article","headline":post.title,"description":post.excerpt,"datePublished":post.date,"author":{"@type":"Organization","name":"JobNova"},"publisher":{"@type":"Organization","name":"JobNova","url":base},"url":canonical});
   const content = `
 <div class="page-sm">
   <a href="/blog" class="back-link">← Back to Blog</a>
   <div class="article-cat">${post.cat}</div>
   <h1 class="article-title">${post.title}</h1>
-  <div class="article-meta">
-    <span>📅 ${post.date}</span>
-    <span>⏱ ${post.readTime}</span>
-    <span>✍️ JobNova Team</span>
-  </div>
+  <div class="article-meta"><span>📅 ${post.date}</span><span>⏱ ${post.readTime}</span><span>✍️ JobNova Team</span></div>
   <div class="article-body">${post.body}</div>
-
-  <!-- AD IN ARTICLE -->
-  <div class="ad-wrap" style="margin-top:32px">
-    <div>
-      <div class="ad-label">Advertisement</div>
-      <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
-      <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
-    </div>
-  </div>
-
-  <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">
+  <div class="ad-wrap" style="margin-top:36px"><div><div class="ad-label">Advertisement</div>
+    <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
+    <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
+  </div></div>
+  <div style="margin-top:32px;display:flex;gap:12px;flex-wrap:wrap">
     <a href="/blog" class="back-link" style="margin-bottom:0">← Back to Blog</a>
-    <a href="/" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">Browse Remote Jobs →</a>
+    <a href="/" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent3),var(--accent));color:#fff;padding:10px 22px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none">Browse Remote Jobs →</a>
   </div>
 </div>`;
-
-  return baseLayout(
-    `${post.title} — JobNova Blog`,
-    post.excerpt,
-    canonical,
-    '', content,
-    `<script type="application/ld+json">${schema}</script>`
-  );
+  return baseLayout(`${post.title} — JobNova Blog`,post.excerpt,canonical,'',content,`<script type="application/ld+json">${schema}</script>`);
 }
 
-// ── STATIC PAGES ──
 const STATIC_PAGES = {
-  privacy: {
-    title: 'Privacy Policy',
-    date: 'Last updated: June 25, 2026',
-    description: 'JobNova Privacy Policy — how we collect, use, and protect your information.',
-    body: `
-      <h2>1. Information We Collect</h2>
-      <p>JobNova does not collect personal information from visitors browsing job listings. No registration or login is required to use the service.</p>
-      <h2>2. Job Alert Subscribers</h2>
-      <p>If you subscribe to job alerts, we store your email address and keyword preferences solely to send relevant job notifications. We do not sell or share this data with third parties.</p>
-      <h2>3. Cookies & Local Storage</h2>
-      <p>We use browser localStorage only to remember your saved jobs and theme preference. No tracking cookies or advertising pixels are used on this site.</p>
-      <h2>4. Third-Party Advertising</h2>
-      <p>This site displays third-party advertisements. Ad networks may use cookies to serve relevant ads based on your browsing history. We are not responsible for the privacy practices of advertising networks.</p>
-      <h2>5. Third-Party Links</h2>
-      <p>Our site contains links to external job application pages. We are not responsible for the privacy practices of these third-party websites.</p>
-      <h2>6. Data Retention</h2>
-      <p>Alert subscriber data is retained until you request deletion. Contact us at any time to have your data removed.</p>
-      <h2>7. Children's Privacy</h2>
-      <p>JobNova is not directed at children under 13. We do not knowingly collect information from children.</p>
-      <h2>8. Contact</h2>
-      <p>For privacy-related questions: <a href="mailto:hello@jobnova.dev">hello@jobnova.dev</a></p>`
-  },
-  terms: {
-    title: 'Terms of Service',
-    date: 'Last updated: June 25, 2026',
-    description: 'JobNova Terms of Service — rules and guidelines for using our job board platform.',
-    body: `
-      <h2>1. Acceptance of Terms</h2>
-      <p>By accessing or using JobNova, you agree to be bound by these Terms of Service. If you do not agree, please discontinue use immediately.</p>
-      <h2>2. Service Description</h2>
-      <p>JobNova is a job aggregation and discovery platform. We curate and display job listings sourced from third-party APIs to help job seekers find remote employment opportunities.</p>
-      <h2>3. Permitted Use</h2>
-      <p>You may use JobNova to search and browse job listings for personal, non-commercial job-seeking purposes only.</p>
-      <h2>4. Prohibited Activities</h2>
-      <ul>
-        <li>Scraping or bulk downloading of job listings or any site data</li>
-        <li>Using the service to send spam or unsolicited outreach to employers</li>
-        <li>Attempting to interfere with or disrupt site functionality</li>
-        <li>Reproducing or reselling any content without written permission</li>
-        <li>Using automated tools to access the service at scale without permission</li>
-      </ul>
-      <h2>5. Accuracy of Listings</h2>
-      <p>We do not guarantee the accuracy, completeness, or current availability of any job listing. Always verify details directly with the employer before applying.</p>
-      <h2>6. No Employment Guarantees</h2>
-      <p>Using JobNova does not guarantee employment. All hiring decisions are made exclusively by the respective employers.</p>
-      <h2>7. Intellectual Property</h2>
-      <p>The JobNova name, logo, and website design are proprietary. Job listing data is sourced from third parties and remains their respective property.</p>
-      <h2>8. Limitation of Liability</h2>
-      <p>JobNova is provided "as is" without warranties of any kind. We are not liable for any direct, indirect, or consequential damages arising from your use of this service.</p>
-      <h2>9. Modifications</h2>
-      <p>We reserve the right to modify these terms at any time. Continued use of the service constitutes acceptance of updated terms.</p>`
-  },
-  disclaimer: {
-    title: 'Disclaimer',
-    date: 'Last updated: June 25, 2026',
-    description: 'JobNova Disclaimer — important information about job listing accuracy and our role as a job aggregator.',
-    body: `
-      <h2>Job Listing Accuracy</h2>
-      <p>JobNova aggregates job listings from third-party data sources. We make no representations about the accuracy, completeness, or timeliness of any listing. Job availability, salary information, requirements, and application links may change or expire without notice.</p>
-      <h2>No Employment Relationship</h2>
-      <p>JobNova is a job discovery platform and not an employer, staffing agency, or recruiter. We do not participate in the hiring process and accept no responsibility for outcomes of any application made through our platform.</p>
-      <h2>Salary Information</h2>
-      <p>Salary figures displayed are estimates provided by third-party data sources and may not reflect actual compensation packages offered by employers. Actual salaries depend on experience, location, negotiation, and company-specific factors.</p>
-      <h2>External Links</h2>
-      <p>All "Apply Now" links lead to third-party websites operated by employers or job platforms. We are not responsible for the content, privacy practices, availability, or any aspect of those external websites.</p>
-      <h2>No Guarantee of Employment</h2>
-      <p>Browsing or applying through JobNova does not guarantee interview opportunities, job offers, or employment of any kind.</p>
-      <h2>Advertisement Disclaimer</h2>
-      <p>This site displays third-party advertisements. JobNova is not responsible for the content, accuracy, or products/services advertised. Advertisement presence does not constitute endorsement.</p>
-      <h2>AI-Processed Content</h2>
-      <p>Some job data may be processed or enriched using automated tools. While we strive for accuracy, automated processing may introduce errors or inconsistencies in job descriptions.</p>`
-  }
+  privacy:{title:'Privacy Policy',date:'Last updated: June 25, 2026',description:'JobNova Privacy Policy.',
+    body:`<h2>1. Information We Collect</h2><p>JobNova does not collect personal information from visitors browsing job listings.</p><h2>2. Job Alert Subscribers</h2><p>If you subscribe to job alerts, we store your email and keywords solely to send notifications. We do not sell this data.</p><h2>3. Cookies & Storage</h2><p>We use browser localStorage only to remember saved jobs and theme preference. No tracking cookies are used.</p><h2>4. Third-Party Advertising</h2><p>This site displays third-party advertisements. Ad networks may use cookies to serve relevant ads.</p><h2>5. Third-Party Links</h2><p>We are not responsible for the privacy practices of external job application websites.</p><h2>6. Contact</h2><p>For privacy questions: <a href="mailto:hello@jobnova.dev">hello@jobnova.dev</a></p>`},
+  terms:{title:'Terms of Service',date:'Last updated: June 25, 2026',description:'JobNova Terms of Service.',
+    body:`<h2>1. Acceptance</h2><p>By accessing JobNova, you agree to these Terms of Service.</p><h2>2. Service</h2><p>JobNova is a job aggregation and discovery platform.</p><h2>3. Prohibited Activities</h2><ul><li>Scraping or bulk downloading job data</li><li>Sending spam or unsolicited outreach</li><li>Interfering with site functionality</li></ul><h2>4. Accuracy</h2><p>We do not guarantee the accuracy of any listing. Verify details directly with employers.</p><h2>5. Liability</h2><p>JobNova is provided "as is" without warranties.</p>`},
+  disclaimer:{title:'Disclaimer',date:'Last updated: June 25, 2026',description:'JobNova Disclaimer.',
+    body:`<h2>Job Listing Accuracy</h2><p>JobNova aggregates listings from third-party sources. Accuracy and timeliness are not guaranteed.</p><h2>No Employment Relationship</h2><p>JobNova is a discovery platform, not an employer or recruiter.</p><h2>Salary Information</h2><p>Salary figures are estimates and may not reflect actual offers.</p><h2>No Guarantee of Employment</h2><p>All hiring decisions are made exclusively by respective employers.</p><h2>Advertisement Disclaimer</h2><p>JobNova is not responsible for advertised products or services.</p>`}
 };
 
 function renderStaticPage(key, base) {
@@ -554,185 +528,491 @@ function renderStaticPage(key, base) {
   <h1 class="static-title">${page.title}</h1>
   <div class="static-date">${page.date}</div>
   <div class="static-body">${page.body}</div>
-  <div style="margin-top:36px">
-    <a href="/" class="back-link" style="margin-bottom:0">← Back to Jobs</a>
-  </div>
+  <div style="margin-top:40px"><a href="/" class="back-link" style="margin-bottom:0">← Back to Jobs</a></div>
 </div>`;
-  return baseLayout(
-    `${page.title} — JobNova`,
-    page.description,
-    `${base}/${key}`,
-    '', content
-  );
+  return baseLayout(`${page.title} — JobNova`,page.description,`${base}/${key}`,'',content);
 }
 
-// ── MAIN HTML (SPA) ──
+// ── MAIN SPA HTML ──
 const MAIN_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0" />
+<meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobNova — Find Your Next Remote Job</title>
 <meta name="description" content="JobNova is a modern remote job board with 600+ curated positions in development, design, marketing, data, and more. Updated hourly.">
-<meta name="keywords" content="remote jobs, developer jobs, designer jobs, work from home, tech jobs, job board, career, fullstack, frontend, backend, data science, devops">
+<meta name="keywords" content="remote jobs, developer jobs, designer jobs, work from home, tech jobs, job board, career">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="JobNova — Find Your Next Remote Job">
-<meta property="og:description" content="600+ curated remote jobs in tech, design, marketing and more. Updated every hour.">
+<meta property="og:description" content="600+ curated remote jobs updated hourly.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://app.jobnova.workers.dev">
 <link rel="canonical" href="https://app.jobnova.workers.dev">
 <link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="https://app.jobnova.workers.dev/feed.rss">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","name":"JobNova","url":"https://app.jobnova.workers.dev","description":"Modern remote job board with 600+ curated positions","potentialAction":{"@type":"SearchAction","target":"https://app.jobnova.workers.dev/?search={search_term_string}","query-input":"required name=search_term_string"}}
-</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"JobNova","url":"https://app.jobnova.workers.dev","potentialAction":{"@type":"SearchAction","target":"https://app.jobnova.workers.dev/?search={search_term_string}","query-input":"required name=search_term_string"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#060B18;--bg2:#0D1525;--card:#111827;--border:#1E2D45;--border-h:#2563EB;--accent:#2563EB;--accent-l:#3B82F6;--accent-g:rgba(37,99,235,.15);--green:#10B981;--amber:#F59E0B;--salary:#34D399;--t1:#F1F5F9;--t2:#94A3B8;--t3:#475569;--sw:260px;--r:14px}
-html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 0;overflow:hidden;position:sticky;top:0;z-index:100}
-.ticker-track{display:flex;gap:48px;animation:ticker 35s linear infinite;white-space:nowrap;width:max-content}
+${SHARED_CSS}
+${NAV_CSS}
+
+/* TICKER */
+.ticker-wrap{
+  background:linear-gradient(90deg,var(--bg2),var(--bg3),var(--bg2));
+  border-bottom:1px solid var(--border);
+  padding:9px 0;overflow:hidden;position:sticky;top:64px;z-index:90;
+}
+.ticker-track{display:flex;gap:52px;animation:ticker 40s linear infinite;white-space:nowrap;width:max-content}
 .ticker-track:hover{animation-play-state:paused}
-.t-item{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:6px}
-.t-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-.t-item strong{color:var(--accent-l)}
+.t-item{font-size:12px;color:var(--t2);display:flex;align-items:center;gap:7px;font-weight:500}
+.t-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite;box-shadow:0 0 6px var(--green)}
+.t-item strong{color:var(--accent2)}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
-.app{display:flex;min-height:calc(100vh - 37px)}
-.sidebar{width:var(--sw);background:var(--bg2);border-right:1px solid var(--border);padding:28px 20px;position:sticky;top:37px;height:calc(100vh - 37px);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:24px}
-.logo{font-size:26px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#3B82F6,#60A5FA,#93C5FD);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;line-height:1.1}
-.logo-sub{font-size:11px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;font-weight:500;margin-top:4px}
-.s-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:8px}
-.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:1px solid transparent;background:transparent;color:var(--t2);border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit;transition:all .2s;text-align:left}
-.nav-btn:hover{background:var(--accent-g);color:var(--accent-l)}
-.nav-btn.active{background:var(--accent-g);color:var(--accent-l);border-color:rgba(59,130,246,.2)}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.5)}}
+
+/* LAYOUT */
+.app{display:flex;min-height:calc(100vh - 101px)}
+
+/* SIDEBAR */
+.sidebar{
+  width:268px;background:var(--bg2);
+  border-right:1px solid var(--border);
+  padding:24px 18px;
+  position:sticky;top:101px;height:calc(100vh - 101px);
+  overflow-y:auto;flex-shrink:0;
+  display:flex;flex-direction:column;gap:20px;
+}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2)}
+.logo{
+  font-size:24px;font-weight:900;letter-spacing:-1px;
+  background:linear-gradient(135deg,#4F8EF7 0%,#A78BFA 50%,#4F8EF7 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  display:block;line-height:1.1;animation:shimmer 4s linear infinite;
+}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+.logo-sub{font-size:10px;color:var(--t3);letter-spacing:2.5px;text-transform:uppercase;font-weight:600;margin-top:3px}
+
+.s-title{
+  font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--t3);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.s-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.nav-btn{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:9px 12px;border:1px solid transparent;
+  background:transparent;color:var(--t2);border-radius:10px;
+  cursor:pointer;font-size:13px;font-weight:500;
+  font-family:inherit;transition:all .2s;text-align:left;
+}
+.nav-btn:hover{background:var(--glow2);color:var(--accent2);border-color:var(--border2)}
+.nav-btn.active{
+  background:linear-gradient(135deg,rgba(79,142,247,.12),rgba(79,142,247,.06));
+  color:var(--accent2);border-color:rgba(79,142,247,.2);
+}
 .nav-icon{font-size:15px;width:20px;text-align:center}
-.nav-count{margin-left:auto;font-size:11px;background:var(--border);color:var(--t3);padding:2px 7px;border-radius:20px}
-.nav-btn.active .nav-count{background:var(--accent);color:#fff}
-.sidebar-stats{background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(37,99,235,.03));border:1px solid rgba(37,99,235,.15);border-radius:var(--r);padding:16px}
-.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.nav-count{
+  margin-left:auto;font-size:10px;font-weight:700;
+  background:rgba(79,142,247,.15);color:var(--accent2);
+  padding:2px 8px;border-radius:20px;
+}
+.nav-btn.active .nav-count{background:var(--accent3);color:#fff}
+
+.stats-card{
+  background:linear-gradient(135deg,rgba(79,142,247,.06),rgba(79,142,247,.02));
+  border:1px solid rgba(79,142,247,.12);
+  border-radius:14px;padding:14px;
+}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0}
 .stat-row:not(:last-child){border-bottom:1px solid var(--border)}
 .stat-label{font-size:12px;color:var(--t3)}
-.stat-val{font-size:14px;font-weight:700;color:var(--accent-l)}
-.footer-links{display:flex;flex-direction:column;gap:4px}
-.footer-link{font-size:12px;color:var(--t3);padding:4px 0;transition:color .2s;cursor:pointer;background:none;border:none;font-family:inherit;text-align:left;text-decoration:none;display:block}
-.footer-link:hover{color:var(--t2)}
+.stat-val{font-size:13px;font-weight:700;color:var(--accent2)}
+
+.footer-link-s{font-size:11px;color:var(--t3);padding:3px 0;transition:color .2s;cursor:pointer;background:none;border:none;font-family:inherit;text-align:left;text-decoration:none;display:block}
+.footer-link-s:hover{color:var(--t2)}
+
+/* MAIN */
 .main{flex:1;min-width:0}
-.hero{padding:48px 40px 36px;border-bottom:1px solid var(--border);background:radial-gradient(ellipse 80% 60% at 50% -20%,rgba(37,99,235,.12),transparent)}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--accent-l);font-weight:500;margin-bottom:20px}
-.hero-title{font-size:36px;font-weight:900;letter-spacing:-1.5px;line-height:1.15;margin-bottom:12px;max-width:560px}
-.hero-title span{background:linear-gradient(135deg,#3B82F6,#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{color:var(--t2);font-size:15px;margin-bottom:28px;max-width:480px}
-.search-wrap{position:relative;max-width:540px}
-.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
-.search-input{width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px 14px 44px;color:var(--t1);font-size:15px;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s}
+
+/* HERO */
+.hero{
+  padding:52px 44px 40px;border-bottom:1px solid var(--border);
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 50%,rgba(79,142,247,.08),transparent),
+    radial-gradient(ellipse 50% 50% at 80% 20%,rgba(139,92,246,.06),transparent);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-50%;right:-20%;
+  width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(79,142,247,.05) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,rgba(79,142,247,.12),rgba(139,92,246,.08));
+  border:1px solid rgba(79,142,247,.2);
+  border-radius:20px;padding:5px 14px;font-size:12px;
+  color:var(--accent2);font-weight:600;margin-bottom:22px;
+  box-shadow:0 2px 12px rgba(79,142,247,.1);
+}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
+.hero-title{
+  font-size:38px;font-weight:900;letter-spacing:-1.5px;
+  line-height:1.12;margin-bottom:14px;max-width:580px;color:var(--t1);
+}
+.hero-title .hl{
+  background:linear-gradient(135deg,var(--accent) 0%,var(--purple) 50%,var(--accent2) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{color:var(--t2);font-size:15px;margin-bottom:32px;max-width:500px;line-height:1.7}
+.hero-stats{display:flex;gap:28px;margin-bottom:28px;flex-wrap:wrap}
+.hero-stat{display:flex;align-items:center;gap:8px}
+.hero-stat-num{font-size:20px;font-weight:800;color:var(--t1)}
+.hero-stat-label{font-size:12px;color:var(--t3);font-weight:500}
+
+.search-wrap{position:relative;max-width:580px}
+.search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;font-size:16px}
+.search-input{
+  width:100%;background:var(--card);
+  border:1.5px solid var(--border2);
+  border-radius:14px;padding:15px 18px 15px 48px;
+  color:var(--t1);font-size:15px;font-family:inherit;
+  outline:none;transition:all .25s;
+  box-shadow:0 2px 16px rgba(0,0,0,.2);
+}
 .search-input::placeholder{color:var(--t3)}
-.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-g)}
-.filters-bar{padding:14px 40px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;overflow-x:auto;background:var(--bg2)}
+.search-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--glow),0 4px 24px rgba(0,0,0,.3);
+  background:var(--card2);
+}
+
+/* FILTER BAR */
+.filters-bar{
+  padding:14px 44px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;overflow-x:auto;
+  background:var(--bg2);
+}
 .filters-bar::-webkit-scrollbar{height:0}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--t2);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .2s}
-.chip:hover{border-color:var(--accent-l);color:var(--accent-l)}
-.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.adv-filters{padding:14px 40px;border-bottom:1px solid var(--border);display:none;gap:12px;flex-wrap:wrap;background:var(--bg);align-items:flex-end}
+
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;border-radius:20px;
+  border:1.5px solid var(--border2);
+  background:var(--card);color:var(--t2);
+  font-size:12px;font-weight:600;font-family:inherit;
+  cursor:pointer;white-space:nowrap;transition:all .2s;
+}
+.chip:hover{border-color:var(--accent3);color:var(--accent2);background:var(--glow2)}
+.chip.active{
+  background:linear-gradient(135deg,var(--accent3),var(--accent));
+  border-color:transparent;color:#fff;
+  box-shadow:0 4px 16px rgba(79,142,247,.3);
+}
+
+/* ADV FILTERS */
+.adv-filters{
+  padding:14px 44px;border-bottom:1px solid var(--border);
+  display:none;gap:12px;flex-wrap:wrap;background:var(--bg);align-items:flex-end;
+}
 .adv-filters.open{display:flex}
-.filter-select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--t2);font-size:13px;font-family:inherit;cursor:pointer;outline:none}
-.filter-select:focus{border-color:var(--accent)}
-.filter-label{font-size:12px;color:var(--t3);display:flex;flex-direction:column;gap:4px}
-.salary-input{width:100px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--t1);font-size:13px;font-family:inherit;outline:none}
+.filter-select{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:10px;padding:8px 14px;color:var(--t2);
+  font-size:13px;font-family:inherit;cursor:pointer;outline:none;transition:all .2s;
+}
+.filter-select:focus{border-color:var(--accent);color:var(--t1)}
+.filter-label{font-size:11px;font-weight:600;color:var(--t3);display:flex;flex-direction:column;gap:5px;letter-spacing:.5px;text-transform:uppercase}
+.salary-input{
+  width:110px;background:var(--card);border:1px solid var(--border2);
+  border-radius:10px;padding:8px 12px;color:var(--t1);font-size:13px;font-family:inherit;outline:none;
+}
 .salary-input:focus{border-color:var(--accent)}
-.clear-filters-btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t3);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
-.clear-filters-btn:hover{color:var(--t1);border-color:var(--t2)}
-.content-wrap{padding:28px 40px}
+.clear-btn{
+  padding:8px 16px;border-radius:10px;border:1px solid var(--border2);
+  background:transparent;color:var(--t3);font-size:13px;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.clear-btn:hover{color:var(--red);border-color:var(--red)}
+
+/* CONTENT */
+.content-wrap{padding:28px 44px}
 .results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
 .results-count{font-size:14px;color:var(--t3)}
-.results-count strong{color:var(--t1);font-weight:600}
-.adv-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t2);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
-.adv-toggle-btn:hover,.adv-toggle-btn.active{background:var(--accent-g);border-color:var(--accent-l);color:var(--accent-l)}
-.jobs-list{display:flex;flex-direction:column;gap:12px}
-.job-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:20px 24px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;display:block;text-decoration:none;color:inherit}
-.job-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-g),transparent);opacity:0;transition:opacity .25s}
-.job-card:hover{border-color:var(--border-h);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.results-count strong{color:var(--t1);font-weight:700}
+.adv-toggle-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 16px;border-radius:10px;border:1px solid var(--border2);
+  background:var(--card);color:var(--t2);font-size:13px;
+  cursor:pointer;font-family:inherit;transition:all .2s;font-weight:500;
+}
+.adv-toggle-btn:hover,.adv-toggle-btn.active{background:var(--glow2);border-color:var(--accent3);color:var(--accent2)}
+
+/* JOB CARDS */
+.jobs-list{display:flex;flex-direction:column;gap:10px}
+
+.job-card{
+  background:var(--card);
+  border:1px solid var(--border2);
+  border-radius:16px;padding:0;
+  cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);
+  position:relative;overflow:hidden;
+  display:block;text-decoration:none;color:inherit;
+}
+.job-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--accent3),var(--purple));
+  opacity:0;transition:opacity .3s;
+}
+.job-card:hover{
+  border-color:rgba(79,142,247,.3);
+  transform:translateY(-2px) translateX(2px);
+  box-shadow:0 8px 40px rgba(0,0,0,.4),0 0 0 1px rgba(79,142,247,.1);
+  background:var(--card2);
+}
 .job-card:hover::before{opacity:1}
-.card-top{display:flex;align-items:flex-start;gap:16px;position:relative}
-.co-logo{width:48px;height:48px;border-radius:10px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--accent-l);overflow:hidden;flex-shrink:0}
+
+.card-inner{padding:20px 24px}
+.card-top{display:flex;align-items:flex-start;gap:16px}
+.co-logo{
+  width:50px;height:50px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;color:var(--accent2);
+  overflow:hidden;flex-shrink:0;transition:transform .3s;
+}
+.job-card:hover .co-logo{transform:scale(1.05)}
+.co-logo img{width:100%;height:100%;object-fit:contain;padding:7px}
+
 .job-info{flex:1;min-width:0}
-.job-title{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:4px;line-height:1.3}
-.job-co{font-size:14px;color:var(--accent-l);font-weight:600;margin-bottom:10px;display:inline-block}
+.card-badges{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+
+.job-title{
+  font-size:15px;font-weight:700;color:var(--t1);
+  margin-bottom:5px;line-height:1.35;
+  transition:color .2s;
+}
+.job-card:hover .job-title{color:var(--accent2)}
+
+.job-co{
+  font-size:13px;color:var(--accent2);font-weight:600;
+  margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;
+}
 .job-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:500}
-.tag-loc{color:var(--t3);padding-left:0}
-.tag-remote{background:rgba(16,185,129,.1);color:#10B981;border:1px solid rgba(16,185,129,.2)}
-.tag-hybrid{background:rgba(245,158,11,.1);color:#F59E0B;border:1px solid rgba(245,158,11,.2)}
-.tag-onsite{background:rgba(148,163,184,.08);color:var(--t2);border:1px solid var(--border)}
-.tag-type{background:rgba(148,163,184,.08);color:var(--t2);border:1px solid var(--border)}
-.tag-new{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:.5px}
-.job-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
-.salary-badge{font-size:13px;font-weight:700;color:var(--salary);background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);padding:4px 12px;border-radius:8px;white-space:nowrap}
+
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 11px;border-radius:20px;font-weight:600}
+.tag-loc{color:var(--t3);font-size:12px;padding-left:0}
+.tag-remote{background:rgba(0,214,143,.1);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.tag-hybrid{background:rgba(255,181,71,.1);color:var(--amber);border:1px solid rgba(255,181,71,.2)}
+.tag-onsite{background:rgba(139,165,204,.06);color:var(--t2);border:1px solid var(--border2)}
+.tag-type{background:rgba(139,165,204,.06);color:var(--t2);border:1px solid var(--border2)}
+.tag-new{
+  background:linear-gradient(135deg,rgba(0,214,143,.18),rgba(0,214,143,.08));
+  color:var(--green);border:1px solid rgba(0,214,143,.3);
+  font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:.8px;
+  animation:pulse-green 2.5s ease-in-out infinite;
+}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(0,214,143,.25)}60%{box-shadow:0 0 0 5px rgba(0,214,143,.05)}}
+.tag-hot{
+  background:linear-gradient(135deg,rgba(255,92,122,.18),rgba(255,92,122,.08));
+  color:var(--red);border:1px solid rgba(255,92,122,.3);
+  font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:.8px;
+}
+.tag-featured{
+  background:linear-gradient(135deg,rgba(139,92,246,.18),rgba(139,92,246,.08));
+  color:var(--purple);border:1px solid rgba(139,92,246,.3);
+  font-size:10px;padding:3px 9px;border-radius:20px;font-weight:800;letter-spacing:.8px;
+}
+
+.job-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
+.salary-badge{
+  font-size:13px;font-weight:800;color:var(--salary);
+  background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);
+  padding:5px 14px;border-radius:10px;white-space:nowrap;
+  box-shadow:0 2px 8px rgba(0,214,143,.1);
+}
 .card-actions{display:flex;align-items:center;gap:6px}
-.save-btn,.share-btn{width:32px;height:32px;border-radius:8px;background:transparent;border:1px solid var(--border);color:var(--t3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .2s;position:relative;z-index:1}
-.save-btn:hover{border-color:var(--amber);color:var(--amber)}
-.save-btn.saved{background:rgba(245,158,11,.1);border-color:var(--amber);color:var(--amber)}
-.share-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
-.apply-arr{width:32px;height:32px;border-radius:8px;background:var(--accent-g);border:1px solid rgba(37,99,235,.2);color:var(--accent-l);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s}
-.job-card:hover .apply-arr{background:var(--accent);border-color:var(--accent);color:#fff}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;color:var(--t1);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:all .3s;z-index:999;max-width:320px}
+.act-btn{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--bg2);border:1px solid var(--border2);
+  color:var(--t3);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:15px;transition:all .2s;position:relative;z-index:1;
+}
+.act-btn:hover{background:var(--card2);border-color:var(--border);color:var(--t1);transform:scale(1.1)}
+.act-btn.saved{background:rgba(255,181,71,.1);border-color:var(--amber);color:var(--amber)}
+.act-btn.saved:hover{background:rgba(255,181,71,.2)}
+.arr-btn{
+  width:34px;height:34px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(79,142,247,.15),rgba(79,142,247,.08));
+  border:1px solid rgba(79,142,247,.2);
+  color:var(--accent2);display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:all .25s;
+}
+.job-card:hover .arr-btn{
+  background:linear-gradient(135deg,var(--accent3),var(--accent));
+  border-color:transparent;color:#fff;
+  box-shadow:0 4px 16px rgba(79,142,247,.4);
+}
+
+/* CARD FOOTER */
+.card-footer{
+  padding:10px 24px;
+  border-top:1px solid var(--border);
+  background:rgba(0,0,0,.1);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--t3);
+}
+.card-footer-tag{display:flex;align-items:center;gap:5px}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:28px;right:28px;
+  background:var(--card2);border:1px solid var(--border2);
+  border-radius:14px;padding:14px 22px;font-size:14px;
+  color:var(--t1);display:flex;align-items:center;gap:12px;
+  box-shadow:var(--shadow2);
+  transform:translateY(120px);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);
+  z-index:9999;max-width:340px;
+}
 .toast.show{transform:translateY(0);opacity:1}
+.toast-bar{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);border-radius:0 0 14px 14px;animation:toast-bar 3s linear forwards}
+@keyframes toast-bar{from{width:100%}to{width:0%}}
+
+/* EMPTY / LOADER */
 .empty{text-align:center;padding:80px 20px;color:var(--t3)}
-.empty .e-icon{font-size:48px;margin-bottom:16px;opacity:.5}
-.empty h3{font-size:18px;color:var(--t2);margin-bottom:8px}
+.empty .e-icon{font-size:52px;margin-bottom:16px;opacity:.4}
+.empty h3{font-size:19px;color:var(--t2);margin-bottom:8px;font-weight:700}
 .empty p{font-size:14px}
 .loader-wrap{padding:80px 20px;text-align:center}
-.loader{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.loader{
+  display:inline-block;width:36px;height:36px;
+  border:3px solid var(--border2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* SKELETON */
+.skeleton{
+  background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);
+  background-size:200% 100%;
+  animation:skeleton 1.5s infinite;
+  border-radius:8px;
+}
+@keyframes skeleton{0%{background-position:200%}100%{background-position:-200%}}
+
+/* PAGINATION */
 .pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:32px 0 16px}
-.page-btn{padding:8px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);color:var(--t2);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .2s}
-.page-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent-l)}
+.page-btn{
+  padding:9px 18px;border-radius:10px;
+  border:1.5px solid var(--border2);background:var(--card);
+  color:var(--t2);font-size:13px;font-weight:500;
+  font-family:inherit;cursor:pointer;transition:all .2s;
+}
+.page-btn:hover:not(:disabled){border-color:var(--accent3);color:var(--accent2);background:var(--glow2)}
 .page-btn:disabled{opacity:.3;cursor:default}
-.page-info{font-size:13px;color:var(--t3);padding:0 8px}
-.ad-wrap{display:flex;justify-content:center;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:16px 0;max-height:80px}
-.ad-label{font-size:10px;color:var(--t3);text-align:center;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase}
-.theme-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
-.theme-btn:hover{border-color:var(--accent-l);color:var(--accent-l)}
-body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F172A;--t2:#475569;--t3:#94A3B8}
-.mob-hdr{display:none;padding:14px 20px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;position:sticky;top:37px;z-index:50;gap:12px}
-.mob-logo{font-size:20px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#3B82F6,#60A5FA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.mob-btns{display:flex;gap:8px}
-.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;backdrop-filter:blur(2px)}
-.drawer-overlay.open{display:block}
-.mob-drawer{position:fixed;top:0;left:-290px;width:280px;height:100vh;background:var(--bg2);border-right:1px solid var(--border);z-index:201;transition:left .3s ease;overflow-y:auto;padding:24px 16px;display:flex;flex-direction:column;gap:24px}
-.mob-drawer.open{left:0}
-.drawer-close{position:absolute;top:16px;right:16px;background:none;border:1px solid var(--border);color:var(--t2);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
-.kw-chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-g);border:1px solid rgba(37,99,235,.2);color:var(--accent-l);padding:5px 12px;border-radius:20px;font-size:13px;font-weight:500;margin:4px}
-.kw-chip button{background:none;border:none;color:var(--accent-l);cursor:pointer;font-size:14px;line-height:1;padding:0}
-.alert-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:36px;max-width:580px}
-.form-group{margin-bottom:20px}
-.form-label{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:8px;display:block}
-.form-input{width:100%;background:var(--bg2);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--t1);font-size:15px;font-family:inherit;outline:none;transition:border-color .2s}
-.form-input:focus{border-color:var(--accent)}
+.page-info{font-size:13px;color:var(--t3);padding:0 10px}
+
+/* AD */
+.ad-wrap{
+  display:flex;justify-content:center;align-items:center;
+  overflow:hidden;margin:14px 0;max-height:72px;
+}
+.ad-label{font-size:9px;color:var(--t3);text-align:center;margin-bottom:4px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
+
+/* FORMS */
+.form-card{background:var(--card);border:1px solid var(--border2);border-radius:18px;padding:36px;max-width:560px}
+.form-group{margin-bottom:22px}
+.form-label{font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px;display:block;letter-spacing:.5px;text-transform:uppercase}
+.form-input{
+  width:100%;background:var(--bg2);
+  border:1.5px solid var(--border2);border-radius:12px;
+  padding:13px 18px;color:var(--t1);font-size:15px;
+  font-family:inherit;outline:none;transition:all .25s;
+}
+.form-input:focus{border-color:var(--accent);background:var(--bg3);box-shadow:0 0 0 3px var(--glow)}
 .form-input::placeholder{color:var(--t3)}
-.submit-btn{width:100%;background:linear-gradient(135deg,#2563EB,#3B82F6);color:#fff;padding:14px;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(37,99,235,.3)}
-.submit-btn:hover{transform:translateY(-1px)}
-.blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:24px}
-.blog-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:24px;cursor:pointer;transition:all .25s;display:block;text-decoration:none;color:inherit}
-.blog-card:hover{border-color:var(--border-h);transform:translateY(-2px)}
-.blog-cat{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent-l);margin-bottom:10px}
-.blog-title{font-size:17px;font-weight:700;margin-bottom:10px;line-height:1.4;color:var(--t1)}
-.blog-excerpt{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:16px}
-.blog-meta{font-size:12px;color:var(--t3);display:flex;gap:12px}
+.submit-btn{
+  width:100%;background:linear-gradient(135deg,var(--accent3),var(--accent));
+  color:#fff;padding:15px;border-radius:12px;font-size:16px;font-weight:700;
+  font-family:inherit;border:none;cursor:pointer;
+  box-shadow:0 4px 24px rgba(79,142,247,.35);transition:all .25s;
+}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 6px 32px rgba(79,142,247,.5)}
+.kw-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);
+  color:var(--accent2);padding:5px 12px;border-radius:20px;
+  font-size:12px;font-weight:600;margin:4px;
+}
+.kw-chip button{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:15px;line-height:1;padding:0;opacity:.7}
+.kw-chip button:hover{opacity:1}
+
+/* LIGHT MODE */
+body.light{
+  --bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;
+  --card:#FFFFFF;--card2:#F5F8FF;
+  --border:#D0DCF0;--border2:#C0CCEA;
+  --t1:#0A1628;--t2:#3D5577;--t3:#8099B8;
+}
+
+/* MOBILE */
+.mob-hdr{
+  display:none;padding:14px 20px;
+  background:rgba(7,13,26,.9);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  align-items:center;justify-content:space-between;
+  position:sticky;top:64px;z-index:80;gap:12px;
+}
+.mob-logo{
+  font-size:20px;font-weight:900;letter-spacing:-.5px;
+  background:linear-gradient(135deg,#4F8EF7,#A78BFA);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.mob-btns{display:flex;gap:8px}
+.mob-btn{
+  width:36px;height:36px;border-radius:10px;
+  border:1px solid var(--border2);background:var(--card);
+  color:var(--t2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;transition:all .2s;
+}
+.mob-btn:hover{border-color:var(--accent3);color:var(--accent2)}
+
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;backdrop-filter:blur(4px)}
+.drawer-overlay.open{display:block}
+.mob-drawer{
+  position:fixed;top:0;left:-290px;width:280px;height:100vh;
+  background:var(--bg2);border-right:1px solid var(--border2);
+  z-index:301;transition:left .32s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;padding:24px 18px;
+  display:flex;flex-direction:column;gap:22px;
+}
+.mob-drawer.open{left:0}
+.drawer-close{
+  position:absolute;top:18px;right:18px;
+  background:var(--card);border:1px solid var(--border2);
+  color:var(--t2);width:32px;height:32px;border-radius:8px;
+  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.drawer-close:hover{color:var(--t1);border-color:var(--border)}
+
 @media(max-width:768px){
   .sidebar{display:none}
   .mob-hdr{display:flex}
-  .hero{padding:24px 20px 20px}
-  .hero-title{font-size:24px}
+  .hero{padding:28px 20px 24px}
+  .hero-title{font-size:26px}
+  .hero-stats{gap:16px}
   .filters-bar{padding:12px 16px}
   .adv-filters{padding:14px 16px}
   .content-wrap{padding:20px 16px}
   .job-right{align-items:flex-start}
-  .blog-grid{grid-template-columns:1fr}
+  .card-inner{padding:16px}
 }
 </style>
 </head>
@@ -741,7 +1021,10 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="mob-drawer" id="mobDrawer">
   <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  <div><span class="logo">JobNova</span><span class="logo-sub">Career Platform</span></div>
+  <div>
+    <span class="logo">JobNova</span>
+    <span class="logo-sub">Career Platform</span>
+  </div>
   <div>
     <div class="s-title">Browse Jobs</div>
     <button class="nav-btn" onclick="filterCat('','All Jobs');closeDrawer()"><span class="nav-icon">🔍</span>All Jobs</button>
@@ -757,47 +1040,66 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
     <div class="s-title">Tools</div>
     <button class="nav-btn" onclick="goView('saved');closeDrawer()"><span class="nav-icon">🔖</span>Saved Jobs</button>
     <button class="nav-btn" onclick="goView('alerts');closeDrawer()"><span class="nav-icon">🔔</span>Job Alerts</button>
-    <a href="/blog" class="nav-btn"><span class="nav-icon">📝</span>Career Blog</a>
+    <a href="/blog" class="nav-btn" style="text-decoration:none"><span class="nav-icon">📝</span>Career Blog</a>
     <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="drawerThemeIcon">🌙</span>Dark / Light</button>
   </div>
   <div style="margin-top:auto">
     <div class="s-title">Legal</div>
-    <a href="/privacy" class="footer-link">Privacy Policy</a>
-    <a href="/terms" class="footer-link">Terms of Service</a>
-    <a href="/disclaimer" class="footer-link">Disclaimer</a>
-    <div style="margin-top:14px;font-size:11px;color:var(--t3)">© 2026 JobNova</div>
+    <a href="/privacy" class="footer-link-s">Privacy Policy</a>
+    <a href="/terms" class="footer-link-s">Terms of Service</a>
+    <a href="/disclaimer" class="footer-link-s">Disclaimer</a>
+    <div style="margin-top:16px;font-size:10px;color:var(--t3);letter-spacing:.5px">© 2026 JobNova. All rights reserved.</div>
   </div>
 </div>
 
+<!-- NAV -->
+<nav class="nav">
+  <a href="/" class="nav-logo">JobNova</a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Jobs</a>
+    <a href="/blog" class="nav-link">Blog</a>
+    <a href="/privacy" class="nav-link">Privacy</a>
+    <a href="/" class="nav-cta">Browse Jobs →</a>
+  </div>
+</nav>
+
+<!-- TICKER -->
 <div class="ticker-wrap">
   <div class="ticker-track">
-    <span class="t-item"><span class="t-dot"></span><strong id="tc1">613</strong> Active Jobs</span>
+    <span class="t-item"><span class="t-dot"></span><strong id="tc1">669</strong> Active Jobs</span>
     <span class="t-item">💼 Updated hourly via AI matching</span>
     <span class="t-item">🌍 Remote-first opportunities worldwide</span>
     <span class="t-item">⚡ Dev · Design · Marketing · Data · DevOps</span>
     <span class="t-item">✅ Verified company listings</span>
     <span class="t-item">🚀 New jobs added every hour</span>
-    <span class="t-item"><span class="t-dot"></span><strong id="tc2">613</strong> Active Jobs</span>
+    <span class="t-item">💰 Positions with salary data included</span>
+    <span class="t-item"><span class="t-dot"></span><strong id="tc2">669</strong> Active Jobs</span>
     <span class="t-item">💼 Updated hourly via AI matching</span>
     <span class="t-item">🌍 Remote-first opportunities worldwide</span>
     <span class="t-item">⚡ Dev · Design · Marketing · Data · DevOps</span>
     <span class="t-item">✅ Verified company listings</span>
     <span class="t-item">🚀 New jobs added every hour</span>
+    <span class="t-item">💰 Positions with salary data included</span>
   </div>
 </div>
 
+<!-- MOBILE HEADER -->
 <div class="mob-hdr">
   <span class="mob-logo">JobNova</span>
   <div class="mob-btns">
-    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
-    <button class="theme-btn" onclick="goView('saved')">🔖</button>
-    <button class="theme-btn" onclick="openDrawer()">☰</button>
+    <button class="mob-btn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    <button class="mob-btn" onclick="goView('saved')">🔖</button>
+    <button class="mob-btn" onclick="openDrawer()">☰</button>
   </div>
 </div>
 
 <div class="app">
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div><span class="logo">JobNova</span><span class="logo-sub">Career Platform</span></div>
+    <div>
+      <span class="logo">JobNova</span>
+      <span class="logo-sub">Career Platform</span>
+    </div>
     <div>
       <div class="s-title">Browse Jobs</div>
       <nav>
@@ -815,52 +1117,79 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       <div class="s-title">Tools</div>
       <button class="nav-btn" onclick="goView('saved')"><span class="nav-icon">🔖</span>Saved Jobs<span class="nav-count" id="saved-cnt">0</span></button>
       <button class="nav-btn" onclick="goView('alerts')"><span class="nav-icon">🔔</span>Job Alerts</button>
-      <a href="/blog" class="nav-btn"><span class="nav-icon">📝</span>Career Blog</a>
+      <a href="/blog" class="nav-btn" style="text-decoration:none"><span class="nav-icon">📝</span>Career Blog</a>
       <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="themeNavIcon">🌙</span>Dark / Light</button>
+    </div>
+    <!-- AD SIDEBAR -->
+    <div>
+      <div style="font-size:9px;color:var(--t3);text-align:center;margin-bottom:5px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5">Advertisement</div>
+      <div style="display:flex;justify-content:center;overflow:hidden;border-radius:10px;max-height:62px">
+        <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
+        <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
+      </div>
     </div>
     <div>
       <div class="s-title">Live Stats</div>
-      <div class="sidebar-stats">
+      <div class="stats-card">
         <div class="stat-row"><span class="stat-label">Total Jobs</span><span class="stat-val" id="st-total">—</span></div>
         <div class="stat-row"><span class="stat-label">With Salary</span><span class="stat-val" id="st-salary">—</span></div>
         <div class="stat-row"><span class="stat-label">Remote</span><span class="stat-val" id="st-remote">—</span></div>
         <div class="stat-row"><span class="stat-label">Updated</span><span class="stat-val">Hourly ⚡</span></div>
       </div>
     </div>
-    <!-- AD SIDEBAR -->
-    <div style="margin-top:8px">
-      <div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:4px;letter-spacing:1px;text-transform:uppercase">Advertisement</div>
-      <div style="display:flex;justify-content:center;overflow:hidden;border-radius:10px;max-height:70px">
-        <script>atOptions={'key':'0ffa7f357eb68570f215b35f87c4ff62','format':'iframe','height':50,'width':320,'params':{}};</script>
-        <script src="https://www.highperformanceformat.com/0ffa7f357eb68570f215b35f87c4ff62/invoke.js"></script>
-      </div>
-    </div>
     <div style="margin-top:auto">
       <div class="s-title">Legal</div>
-      <div class="footer-links">
-        <a href="/privacy" class="footer-link">Privacy Policy</a>
-        <a href="/terms" class="footer-link">Terms of Service</a>
-        <a href="/disclaimer" class="footer-link">Disclaimer</a>
-        <a href="/feed.rss" class="footer-link">RSS Feed</a>
-      </div>
-      <div style="margin-top:14px;font-size:11px;color:var(--t3)">© 2026 JobNova. All rights reserved.</div>
+      <a href="/privacy" class="footer-link-s">Privacy Policy</a>
+      <a href="/terms" class="footer-link-s">Terms of Service</a>
+      <a href="/disclaimer" class="footer-link-s">Disclaimer</a>
+      <a href="/feed.rss" class="footer-link-s">RSS Feed</a>
+      <div style="margin-top:14px;font-size:10px;color:var(--t3);letter-spacing:.5px">© 2026 JobNova. All rights reserved.</div>
     </div>
   </aside>
 
   <main class="main">
+    <!-- JOBS VIEW -->
     <div id="vJobs">
       <div class="hero">
-        <div class="hero-badge">✨ AI-Powered Job Matching — Updated Hourly</div>
-        <h1 class="hero-title">Find Your Next <span>Remote Career</span> Opportunity</h1>
-        <p class="hero-sub">600+ curated jobs in tech, design, marketing & more. Fresh listings every hour.</p>
+        <div class="hero-eyebrow">
+          <span class="hero-eyebrow-dot"></span>
+          AI-Powered Job Matching — Updated Every Hour
+        </div>
+        <h1 class="hero-title">
+          Find Your Next<br><span class="hl">Remote Career</span> Opportunity
+        </h1>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-num" id="stat-jobs">600+</span>
+            <span class="hero-stat-label">Active Jobs</span>
+          </div>
+          <div style="width:1px;background:var(--border2);align-self:stretch"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-num">50+</span>
+            <span class="hero-stat-label">Companies</span>
+          </div>
+          <div style="width:1px;background:var(--border2);align-self:stretch"></div>
+          <div class="hero-stat">
+            <span class="hero-stat-num">Hourly</span>
+            <span class="hero-stat-label">Updates</span>
+          </div>
+        </div>
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="searchInput" placeholder="Search jobs, companies, or skills..." oninput="debounceSearch(this.value)">
+          <input type="text" class="search-input" id="searchInput"
+            placeholder="Search jobs, companies, or skills..."
+            oninput="debounceSearch(this.value)">
         </div>
       </div>
 
       <!-- AD BELOW HERO -->
-      
+      <div style="display:flex;justify-content:center;align-items:center;padding:8px 44px;background:var(--bg2);border-bottom:1px solid var(--border);overflow:hidden;max-height:68px">
+        <div style="text-align:center">
+          <div style="font-size:9px;color:var(--t3);margin-bottom:4px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5">Advertisement</div>
+          <script async="async" data-cfasync="false" src="https://pl29900952.effectivecpmnetwork.com/240c21d3732d67f320e55d7618105288/invoke.js"></script>
+          <div id="container-240c21d3732d67f320e55d7618105288"></div>
+        </div>
+      </div>
 
       <div class="filters-bar">
         <button class="chip active" onclick="filterCat('','All Jobs')">All Jobs</button>
@@ -879,7 +1208,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
         <label class="filter-label">Seniority<select class="filter-select" id="fSeniority" onchange="applyAdvFilters()"><option value="">All Levels</option><option value="Junior">Junior</option><option value="Mid">Mid-Level</option><option value="Senior">Senior</option><option value="Staff">Staff / Principal</option></select></label>
         <label class="filter-label">Min Salary ($k)<input type="number" class="salary-input" id="fSalaryMin" placeholder="e.g. 80" oninput="debounceAdv()"></label>
         <label class="filter-label">Posted Within<select class="filter-select" id="fDate" onchange="applyAdvFilters()"><option value="">Any time</option><option value="1">Today</option><option value="7">This week</option><option value="30">This month</option></select></label>
-        <button class="clear-filters-btn" onclick="clearAdvFilters()">✕ Clear</button>
+        <button class="clear-btn" onclick="clearAdvFilters()">✕ Clear</button>
       </div>
 
       <div class="content-wrap">
@@ -889,7 +1218,7 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
         </div>
         <!-- AD BEFORE JOBS -->
         <div class="ad-wrap">
-          <div>
+          <div style="text-align:center">
             <div class="ad-label">Advertisement</div>
             <script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};</script>
             <script src="https://www.highperformanceformat.com/f9df5bf8e15c630ee01718f64c6edfb3/invoke.js"></script>
@@ -900,28 +1229,30 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
       </div>
     </div>
 
+    <!-- SAVED VIEW -->
     <div id="vSaved" style="display:none">
-      <div class="content-wrap" style="max-width:800px">
+      <div class="content-wrap" style="max-width:820px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
-          <h2 style="font-size:22px;font-weight:800">🔖 Saved Jobs</h2>
-          <button onclick="clearAllSaved()" style="padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--t3);font-size:13px;cursor:pointer;font-family:inherit">Clear All</button>
+          <h2 style="font-size:22px;font-weight:800;color:var(--t1)">🔖 Saved Jobs</h2>
+          <button onclick="clearAllSaved()" style="padding:8px 16px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--t3);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--t3)'">Clear All</button>
         </div>
         <div class="jobs-list" id="savedList"></div>
       </div>
     </div>
 
+    <!-- ALERTS VIEW -->
     <div id="vAlerts" style="display:none">
       <div class="content-wrap">
-        <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:8px;color:var(--t3);font-size:14px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:28px">← Back to Jobs</button>
-        <div class="alert-card">
-          <div style="font-size:22px;font-weight:800;margin-bottom:8px">🔔 Job Alerts</div>
+        <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:8px;color:var(--t3);font-size:14px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:28px;transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t3)'">← Back to Jobs</button>
+        <div class="form-card">
+          <div style="font-size:24px;font-weight:800;margin-bottom:8px;color:var(--t1)">🔔 Job Alerts</div>
           <div style="font-size:15px;color:var(--t2);margin-bottom:28px">Get notified by email when new matching jobs are posted.</div>
           <div class="form-group">
             <label class="form-label">Your Email Address</label>
             <input type="email" class="form-input" id="alertEmail" placeholder="you@example.com">
           </div>
           <div class="form-group">
-            <label class="form-label">Keywords <span style="color:var(--t3);font-weight:400">(press Enter to add)</span></label>
+            <label class="form-label">Keywords <span style="color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">(press Enter to add)</span></label>
             <input type="text" class="form-input" id="alertKwInput" placeholder="e.g. React, Python, Remote..." onkeydown="addKeyword(event)">
             <div style="margin-top:10px" id="kwWrap"></div>
           </div>
@@ -932,7 +1263,11 @@ body.light{--bg:#F8FAFC;--bg2:#F1F5F9;--card:#FFFFFF;--border:#E2E8F0;--t1:#0F17
   </main>
 </div>
 
-<div class="toast" id="toast"><span id="toastIcon">✓</span> <span id="toastMsg">Done</span></div>
+<div class="toast" id="toast">
+  <span id="toastIcon" style="font-size:18px">✓</span>
+  <span id="toastMsg">Done</span>
+  <div class="toast-bar" id="toastBar"></div>
+</div>
 
 <script>
 let pg=1,cat='',srch='',advT,srchT;
@@ -945,52 +1280,89 @@ let isLight=localStorage.getItem('jn_theme')==='light';
 function applyTheme(){
   document.body.classList.toggle('light',isLight);
   const ic=isLight?'☀️':'🌙';
-  ['themeBtn','themeNavIcon','drawerThemeIcon'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ic;});
+  ['themeBtn','themeNavIcon','drawerThemeIcon'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=ic;
+  });
 }
 function toggleTheme(){isLight=!isLight;localStorage.setItem('jn_theme',isLight?'light':'dark');applyTheme();}
 applyTheme();
 
-function openDrawer(){document.getElementById('mobDrawer').classList.add('open');document.getElementById('drawerOverlay').classList.add('open');document.body.style.overflow='hidden';}
-function closeDrawer(){document.getElementById('mobDrawer').classList.remove('open');document.getElementById('drawerOverlay').classList.remove('open');document.body.style.overflow='';}
+function openDrawer(){
+  document.getElementById('mobDrawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDrawer(){
+  document.getElementById('mobDrawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
 
 function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
-function logoHtml(co,sz='48px'){
+
+function logoHtml(co,sz='50px'){
   const slug=(co||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const domain=slug+'.com';
   const ini=initials(co);
-  const fs=Math.round(parseInt(sz)*.33)+'px';
+  const fs=Math.round(parseInt(sz)*.32)+'px';
   return \`<div class="co-logo" style="width:\${sz};height:\${sz}" title="\${co}">
     <img src="https://www.google.com/s2/favicons?domain=\${domain}&sz=64" alt="\${co}"
-      style="width:100%;height:100%;object-fit:contain;padding:5px;display:block"
+      style="width:100%;height:100%;object-fit:contain;padding:8px;display:block"
       onerror="this.onerror=null;this.src='https://icons.duckduckgo.com/ip3/\${domain}.ico';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex'}">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${fs};font-weight:800;color:var(--accent-l)">\${ini}</span>
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${fs};font-weight:800;color:#4F8EF7">\${ini}</span>
   </div>\`;
 }
+
 function remoteTag(t){
   if(!t)return'';
-  const m={fully_remote:['tag-remote','🌐 Remote'],hybrid:['tag-hybrid','🏢 Hybrid'],on_site:['tag-onsite','📍 On-site'],onsite:['tag-onsite','📍 On-site']};
+  const m={
+    fully_remote:['tag-remote','🌐 Remote'],
+    hybrid:['tag-hybrid','🏢 Hybrid'],
+    on_site:['tag-onsite','📍 On-site'],
+    onsite:['tag-onsite','📍 On-site']
+  };
   const[cls,lbl]=m[t]||['tag-onsite',t.replace(/_/g,' ')];
   return\`<span class="tag \${cls}">\${lbl}</span>\`;
 }
+
 function isNew(ts){if(!ts)return false;return Date.now()-new Date(ts).getTime()<86400000;}
+function isHotSalary(sal){if(!sal)return false;const n=parseInt(sal.replace(/\\D/g,'').slice(0,3));return n>=150;}
+
+let toastTimer;
 function showToast(msg,type='success'){
   const el=document.getElementById('toast');
+  const icon=document.getElementById('toastIcon');
+  const bar=document.getElementById('toastBar');
   document.getElementById('toastMsg').textContent=msg;
-  document.getElementById('toastIcon').textContent=type==='success'?'✓':'ℹ';
+  icon.textContent=type==='success'?'✓':'ℹ';
+  icon.style.color=type==='success'?'var(--green)':'var(--accent2)';
   el.className='toast show';
-  setTimeout(()=>el.classList.remove('show'),3000);
+  if(bar){bar.style.animation='none';bar.offsetHeight;bar.style.animation='toast-bar 3s linear forwards';}
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),3100);
 }
+
 function updateSavedCount(){document.getElementById('saved-cnt').textContent=savedIds.length||0;}
 
 const VIEWS=['vJobs','vSaved','vAlerts'];
-function showView(id){VIEWS.forEach(v=>document.getElementById(v).style.display=v===id?'block':'none');window.scrollTo(0,0);}
+function showView(id){
+  VIEWS.forEach(v=>{
+    const el=document.getElementById(v);
+    if(el)el.style.display=v===id?'block':'none';
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function goView(v){
   if(v==='jobs'){showView('vJobs');return;}
   if(v==='saved'){showView('vSaved');renderSaved();return;}
   if(v==='alerts'){showView('vAlerts');return;}
 }
 
-function toggleAdv(){document.getElementById('advFilters').classList.toggle('open');document.getElementById('advToggleBtn').classList.toggle('active');}
+function toggleAdv(){
+  document.getElementById('advFilters').classList.toggle('open');
+  document.getElementById('advToggleBtn').classList.toggle('active');
+}
 function applyAdvFilters(){
   adv.remote=document.getElementById('fRemote').value;
   adv.employ=document.getElementById('fEmploy').value;
@@ -1007,8 +1379,28 @@ function clearAdvFilters(){
   pg=1;loadJobs();
 }
 
+function renderSkeletons(){
+  return Array(5).fill(0).map(()=>\`
+    <div class="job-card" style="pointer-events:none">
+      <div class="card-inner">
+        <div class="card-top">
+          <div class="skeleton" style="width:50px;height:50px;border-radius:12px;flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div class="skeleton" style="height:14px;width:60%;margin-bottom:10px;border-radius:6px"></div>
+            <div class="skeleton" style="height:18px;width:80%;margin-bottom:10px;border-radius:6px"></div>
+            <div class="skeleton" style="height:12px;width:40%;border-radius:6px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <div class="skeleton" style="height:30px;width:100px;border-radius:8px"></div>
+            <div class="skeleton" style="height:34px;width:80px;border-radius:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>\`).join('');
+}
+
 async function loadJobs(){
-  document.getElementById('jobsList').innerHTML='<div class="loader-wrap"><div class="loader"></div></div>';
+  document.getElementById('jobsList').innerHTML=renderSkeletons();
   document.getElementById('pagination').innerHTML='';
   const p=new URLSearchParams({page:pg});
   if(cat)p.set('category',cat);
@@ -1018,50 +1410,91 @@ async function loadJobs(){
   if(adv.seniority)p.set('seniority',adv.seniority);
   if(adv.salaryMin)p.set('salary_min',adv.salaryMin);
   if(adv.days)p.set('days',adv.days);
+
   try{
     const res=await fetch('/api/jobs?'+p);
     const data=await res.json();
     jobs=data.jobs||[];total=data.total||0;
-    document.getElementById('resultsCount').innerHTML=\`<strong>\${total.toLocaleString()}</strong> jobs found\${cat?' in <strong>'+cat+'</strong>':''}\${srch?' for "<strong>'+srch+'</strong>"':''}\`;
+
+    document.getElementById('resultsCount').innerHTML=
+      \`<strong>\${total.toLocaleString()}</strong> jobs found\${cat?' in <strong>'+cat+'</strong>':''}\${srch?' for "<strong>'+srch+'</strong>"':''}\`;
+
     if(!jobs.length){
-      document.getElementById('jobsList').innerHTML='<div class="empty"><div class="e-icon">🔍</div><h3>No jobs found</h3><p>Try different keywords or browse all categories</p></div>';
+      document.getElementById('jobsList').innerHTML=\`
+        <div class="empty">
+          <div class="e-icon">🔍</div>
+          <h3>No jobs found</h3>
+          <p>Try different keywords or browse all categories</p>
+        </div>\`;
       return;
     }
-    document.getElementById('jobsList').innerHTML=jobs.map(j=>{
+
+    document.getElementById('jobsList').innerHTML=jobs.map((j,idx)=>{
       const saved=savedIds.includes(j.id);
-      const newBadge=isNew(j.created_at)?'<span class="tag-new">NEW</span>':'';
-      return\`<a href="/job/\${j.id}" class="job-card">
-        <div class="card-top">
-          \${logoHtml(j.company)}
-          <div class="job-info">
-            <div class="job-title">\${j.title} \${newBadge}</div>
-            <div class="job-co">\${j.company}</div>
-            <div class="job-meta">
-              \${j.location?'<span class="tag tag-loc">📍 '+j.location+'</span>':''}
-              \${remoteTag(j.remote_type)}
-              \${j.employment_type?'<span class="tag tag-type">'+j.employment_type.replace(/_/g,' ')+'</span>':''}
-              \${j.seniority?'<span class="tag tag-type">'+j.seniority+'</span>':''}
+      const nw=isNew(j.created_at);
+      const hot=isHotSalary(j.salary);
+      const featured=idx<3;
+      const timeAgo=j.created_at?getTimeAgo(new Date(j.created_at)):'';
+      return\`<a href="/job/\${j.id}" class="job-card" style="animation:fadeIn .4s ease \${idx*.06}s both">
+        <div class="card-inner">
+          <div class="card-top">
+            \${logoHtml(j.company)}
+            <div class="job-info">
+              <div class="card-badges">
+                \${nw?'<span class="tag-new">✦ NEW</span>':''}
+                \${hot?'<span class="tag-hot">🔥 HOT</span>':''}
+                \${featured&&!nw&&!hot?'<span class="tag-featured">⭐ FEATURED</span>':''}
+              </div>
+              <div class="job-title">\${j.title}</div>
+              <div class="job-co">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+                \${j.company}
+              </div>
+              <div class="job-meta">
+                \${j.location?'<span class="tag tag-loc">📍 '+j.location+'</span>':''}
+                \${remoteTag(j.remote_type)}
+                \${j.employment_type?'<span class="tag tag-type">'+j.employment_type.replace(/_/g,' ')+'</span>':''}
+                \${j.seniority?'<span class="tag tag-type">'+j.seniority+'</span>':''}
+              </div>
             </div>
-          </div>
-          <div class="job-right">
-            \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':''}
-            <div class="card-actions">
-              <button class="save-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">🔖</button>
-              <button class="share-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">🔗</button>
-              <div class="apply-arr">→</div>
+            <div class="job-right">
+              \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':''}
+              <div class="card-actions">
+                <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}" title="\${saved?'Unsave':'Save'} job">\${saved?'🔖':'🔖'}</button>
+                <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})" title="Copy link">🔗</button>
+                <div class="arr-btn">→</div>
+              </div>
             </div>
           </div>
         </div>
+        \${timeAgo?'<div class="card-footer"><span class="card-footer-tag">⏰ Posted '+timeAgo+'</span><span style="color:var(--accent2);font-size:11px">View Details →</span></div>':''}
       </a>\`;
     }).join('');
+
     const tp=Math.ceil(total/20);
     if(tp>1)document.getElementById('pagination').innerHTML=\`
       <button class="page-btn" onclick="goPage(\${pg-1})" \${pg===1?'disabled':''}>← Prev</button>
       <span class="page-info">Page \${pg} of \${tp}</span>
       <button class="page-btn" onclick="goPage(\${pg+1})" \${pg===tp?'disabled':''}>Next →</button>\`;
+
   }catch(e){
-    document.getElementById('jobsList').innerHTML='<div class="empty"><div class="e-icon">⚠️</div><h3>Failed to load</h3><p>Please refresh and try again</p></div>';
+    document.getElementById('jobsList').innerHTML=\`
+      <div class="empty">
+        <div class="e-icon">⚠️</div>
+        <h3>Failed to load jobs</h3>
+        <p>Please refresh and try again</p>
+      </div>\`;
   }
+}
+
+function getTimeAgo(date){
+  const diff=Date.now()-date.getTime();
+  const h=Math.floor(diff/3600000);
+  const d=Math.floor(diff/86400000);
+  if(h<1)return'just now';
+  if(h<24)return h+'h ago';
+  if(d<7)return d+'d ago';
+  return d+'d ago';
 }
 
 function toggleSave(id){
@@ -1073,38 +1506,50 @@ function toggleSave(id){
   const btn=document.getElementById('sb-'+id);
   if(btn)btn.classList.toggle('saved',savedIds.includes(id));
 }
+
 function shareJob(id){
   const url=window.location.origin+'/job/'+id;
-  navigator.clipboard.writeText(url).then(()=>showToast('Link copied! 🔗')).catch(()=>showToast('Copy: '+url,'info'));
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied! 🔗')).catch(()=>showToast('Copied!'));
 }
 
 function renderSaved(){
   if(!savedIds.length){
-    document.getElementById('savedList').innerHTML='<div class="empty"><div class="e-icon">🔖</div><h3>No saved jobs yet</h3><p>Click the bookmark icon on any job to save it</p></div>';
+    document.getElementById('savedList').innerHTML=\`
+      <div class="empty">
+        <div class="e-icon">🔖</div>
+        <h3>No saved jobs yet</h3>
+        <p>Click the bookmark icon on any job to save it</p>
+      </div>\`;
     return;
   }
   const saved=jobs.filter(j=>savedIds.includes(j.id));
   if(!saved.length){
-    document.getElementById('savedList').innerHTML='<div class="empty"><div class="e-icon">🔖</div><h3>Browse jobs and save the ones you like</h3></div>';
+    document.getElementById('savedList').innerHTML=\`
+      <div class="empty">
+        <div class="e-icon">🔖</div>
+        <h3>Browse jobs and save the ones you like</h3>
+      </div>\`;
     return;
   }
   document.getElementById('savedList').innerHTML=saved.map(j=>\`
     <a href="/job/\${j.id}" class="job-card">
-      <div class="card-top">
-        \${logoHtml(j.company)}
-        <div class="job-info">
-          <div class="job-title">\${j.title}</div>
-          <div class="job-co">\${j.company}</div>
-          <div class="job-meta">\${remoteTag(j.remote_type)}</div>
-        </div>
-        <div class="job-right">
-          \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':''}
-          <button class="save-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">🔖</button>
+      <div class="card-inner">
+        <div class="card-top">
+          \${logoHtml(j.company)}
+          <div class="job-info">
+            <div class="job-title">\${j.title}</div>
+            <div class="job-co">\${j.company}</div>
+            <div class="job-meta">\${remoteTag(j.remote_type)}\${j.employment_type?'<span class="tag tag-type">'+j.employment_type.replace(/_/g,' ')+'</span>':''}</div>
+          </div>
+          <div class="job-right">
+            \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':''}
+            <button class="act-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">🔖</button>
+          </div>
         </div>
       </div>
     </a>\`).join('');
 }
-function clearAllSaved(){savedIds=[];localStorage.removeItem('jn_saved');updateSavedCount();renderSaved();showToast('Cleared','info');}
+function clearAllSaved(){savedIds=[];localStorage.removeItem('jn_saved');updateSavedCount();renderSaved();showToast('Cleared all saved jobs','info');}
 
 function addKeyword(e){
   if(e.key!=='Enter')return;
@@ -1124,21 +1569,26 @@ async function submitAlert(){
   try{
     const res=await fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,keywords:alertKws})});
     const d=await res.json();
-    if(d.success){showToast('Subscribed! 🎉');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
+    if(d.success){showToast('Subscribed successfully! 🎉');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
     else showToast(d.error||'Something went wrong','info');
-  }catch(e){showToast('Failed. Try again.','info');}
+  }catch(e){showToast('Failed. Please try again.','info');}
 }
 
 function filterCat(c,label){
   cat=c;pg=1;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.includes(label||'All'))b.classList.add('active');});
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.trim().startsWith(label?.split(' ')[0]||'All'))b.classList.add('active');});
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
-  document.querySelectorAll('.chip').forEach(c=>{if(c.textContent.includes(label||'All'))c.classList.add('active');});
+  document.querySelectorAll('.chip').forEach(c=>{if(c.textContent.includes(label?.split(' ').slice(-1)[0]||'All Jobs'))c.classList.add('active');});
   showView('vJobs');loadJobs();
 }
 function debounceSearch(v){clearTimeout(srchT);srchT=setTimeout(()=>{srch=v;pg=1;loadJobs();},400);}
-function goPage(p){pg=p;loadJobs();window.scrollTo(0,0);}
+function goPage(p){pg=p;loadJobs();window.scrollTo({top:0,behavior:'smooth'});}
+
+// CSS animation
+const style=document.createElement('style');
+style.textContent=\`@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}\`;
+document.head.appendChild(style);
 
 async function init(){
   updateSavedCount();
@@ -1147,10 +1597,12 @@ async function init(){
     const r=await fetch('/api/debug');
     const d=await r.json();
     const n=d.jobs_in_db||0;
-    ['st-total','cnt-all'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=n.toLocaleString();});
-    ['tc1','tc2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=n.toLocaleString();});
-    const ss=document.getElementById('st-salary');if(ss)ss.textContent=Math.round(n*.65).toLocaleString();
-    const sr=document.getElementById('st-remote');if(sr)sr.textContent=Math.round(n*.4).toLocaleString();
+    const fmt=n=>n.toLocaleString();
+    ['st-total','cnt-all'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=fmt(n);});
+    ['tc1','tc2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=fmt(n);});
+    const sj=document.getElementById('stat-jobs');if(sj)sj.textContent=fmt(n)+'+';
+    const ss=document.getElementById('st-salary');if(ss)ss.textContent=fmt(Math.round(n*.65));
+    const sr=document.getElementById('st-remote');if(sr)sr.textContent=fmt(Math.round(n*.4));
   }catch(e){}
 }
 init();
@@ -1164,23 +1616,21 @@ export default {
     const base = `${url.protocol}//${url.host}`;
     await ensureTable(env);
 
-    // ── SITEMAP ──
     if (url.pathname === '/sitemap.xml') {
-      const { results } = await env.DB.prepare("SELECT id, title, company, created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
+      const { results } = await env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
       const urls = [
         `<url><loc>${base}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`,
         `<url><loc>${base}/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
         `<url><loc>${base}/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
         `<url><loc>${base}/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
         `<url><loc>${base}/disclaimer</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
-        ...BLOG_POSTS.map(p => `<url><loc>${base}/blog/${p.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
-        ...results.map(j => `<url><loc>${base}/job/${j.id}</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>${new Date(j.created_at||Date.now()).toISOString().split('T')[0]}</lastmod></url>`)
+        ...BLOG_POSTS.map(p=>`<url><loc>${base}/blog/${p.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
+        ...results.map(j=>`<url><loc>${base}/job/${j.id}</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>${new Date(j.created_at||Date.now()).toISOString().split('T')[0]}</lastmod></url>`)
       ].join('');
       return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
-        { headers: { "Content-Type": "application/xml" } });
+        {headers:{"Content-Type":"application/xml"}});
     }
 
-    // ── RSS ──
     if (url.pathname === '/feed.rss') {
       const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC LIMIT 50").all();
       const items = results.map(j=>`<item>
@@ -1191,87 +1641,69 @@ export default {
         <pubDate>${new Date(j.created_at||Date.now()).toUTCString()}</pubDate>
       </item>`).join('');
       return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-<channel>
-  <title>JobNova — Remote Jobs</title>
-  <link>${base}</link>
-  <description>Latest remote job listings from JobNova</description>
-  <atom:link href="${base}/feed.rss" rel="self" type="application/rss+xml"/>
-  ${items}
-</channel></rss>`, { headers: { "Content-Type": "application/rss+xml" } });
+<channel><title>JobNova — Remote Jobs</title><link>${base}</link>
+<description>Latest remote job listings from JobNova</description>
+<atom:link href="${base}/feed.rss" rel="self" type="application/rss+xml"/>
+${items}</channel></rss>`,{headers:{"Content-Type":"application/rss+xml"}});
     }
 
-    // ── JOB PAGE /job/:id ──
     const jobMatch = url.pathname.match(/^\/job\/(\d+)$/);
     if (jobMatch) {
-      const id = jobMatch[1];
-      const { results } = await env.DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(id).all();
-      if (!results.length) return new Response('Job not found', { status: 404 });
+      const { results } = await env.DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobMatch[1]).all();
+      if (!results.length) return new Response('Job not found',{status:404});
       let job = results[0];
-
-      // جلب الوصف إذا كان فارغاً
       if ((!job.description || job.description.length < 20) && job.job_handle) {
         try {
-          const r = await fetch(`https://api.jobdatalake.com/v1/jobs/${job.job_handle}`, { headers: { "X-API-Key": env.API_KEY } });
+          const r = await fetch(`https://api.jobdatalake.com/v1/jobs/${job.job_handle}`,{headers:{"X-API-Key":env.API_KEY}});
           if (r.ok) {
-            const detail = await r.json();
-            const desc = detail.description || detail.summary || "";
+            const d = await r.json();
+            const desc = d.description || d.summary || "";
             if (desc && desc.length > 20) {
               await env.DB.prepare("UPDATE jobs SET description = ? WHERE id = ?").bind(desc, job.id).run();
-              job = { ...job, description: desc };
+              job = {...job, description: desc};
             }
           }
         } catch(e) {}
       }
-
-      // وظائف مشابهة
       const { results: related } = await env.DB.prepare(
-        "SELECT id, title, company, salary, remote_type FROM jobs WHERE id != ? ORDER BY RANDOM() LIMIT 4"
-      ).bind(id).all();
-
-      return new Response(renderJobPage(job, related, base), {
-        headers: { "Content-Type": "text/html; charset=utf-8" }
-      });
+        "SELECT id,title,company,salary,remote_type FROM jobs WHERE id != ? ORDER BY RANDOM() LIMIT 4"
+      ).bind(jobMatch[1]).all();
+      return new Response(renderJobPage(job, related, base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
     }
 
-    // ── BLOG INDEX /blog ──
-    if (url.pathname === '/blog') {
-      return new Response(renderBlogIndex(base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
-    }
+    if (url.pathname === '/blog') return new Response(renderBlogIndex(base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
 
-    // ── BLOG ARTICLE /blog/:id ──
     const blogMatch = url.pathname.match(/^\/blog\/(\d+)$/);
     if (blogMatch) {
-      const post = BLOG_POSTS.find(p => p.id === parseInt(blogMatch[1]));
-      if (!post) return new Response('Article not found', { status: 404 });
-      return new Response(renderArticlePage(post, base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      const post = BLOG_POSTS.find(p=>p.id===parseInt(blogMatch[1]));
+      if (!post) return new Response('Not found',{status:404});
+      return new Response(renderArticlePage(post,base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
     }
 
-    // ── STATIC PAGES ──
-    if (url.pathname === '/privacy') return new Response(renderStaticPage('privacy', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
-    if (url.pathname === '/terms') return new Response(renderStaticPage('terms', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
-    if (url.pathname === '/disclaimer') return new Response(renderStaticPage('disclaimer', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    if (url.pathname==='/privacy') return new Response(renderStaticPage('privacy',base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
+    if (url.pathname==='/terms') return new Response(renderStaticPage('terms',base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
+    if (url.pathname==='/disclaimer') return new Response(renderStaticPage('disclaimer',base),{headers:{"Content-Type":"text/html; charset=utf-8"}});
 
-    // ── API ROUTES ──
-    if (url.pathname === '/api/subscribe' && request.method === 'POST') {
+    if (url.pathname==='/api/subscribe' && request.method==='POST') {
       try {
-        const { email, keywords } = await request.json();
-        if (!email || !keywords?.length) return new Response(JSON.stringify({ success:false, error:"Email and keywords required" }), { headers:{"Content-Type":"application/json"} });
-        await env.DB.prepare("INSERT OR REPLACE INTO subscribers (email,keywords) VALUES (?,?)").bind(email, JSON.stringify(keywords)).run();
-        return new Response(JSON.stringify({ success:true }), { headers:{"Content-Type":"application/json"} });
-      } catch(e) { return new Response(JSON.stringify({ success:false, error:e.message }), { status:500, headers:{"Content-Type":"application/json"} }); }
+        const {email,keywords} = await request.json();
+        if (!email||!keywords?.length) return new Response(JSON.stringify({success:false,error:"Required"}),{headers:{"Content-Type":"application/json"}});
+        await env.DB.prepare("INSERT OR REPLACE INTO subscribers (email,keywords) VALUES (?,?)").bind(email,JSON.stringify(keywords)).run();
+        return new Response(JSON.stringify({success:true}),{headers:{"Content-Type":"application/json"}});
+      } catch(e) { return new Response(JSON.stringify({success:false,error:e.message}),{status:500,headers:{"Content-Type":"application/json"}}); }
     }
 
-    if (url.pathname === '/api/jobs') {
-      const page = parseInt(url.searchParams.get("page")||"1");
-      const limit = 20, offset = (page-1)*limit;
-      const category = url.searchParams.get("category")||"";
-      const search = url.searchParams.get("search")||"";
-      const remoteType = url.searchParams.get("remote_type")||"";
-      const employType = url.searchParams.get("employment_type")||"";
-      const seniority = url.searchParams.get("seniority")||"";
-      const salaryMin = url.searchParams.get("salary_min")||"";
-      const days = url.searchParams.get("days")||"";
-      const conditions=[], params=[];
+    if (url.pathname==='/api/jobs') {
+      const page=parseInt(url.searchParams.get("page")||"1");
+      const limit=20,offset=(page-1)*limit;
+      const category=url.searchParams.get("category")||"";
+      const search=url.searchParams.get("search")||"";
+      const remoteType=url.searchParams.get("remote_type")||"";
+      const employType=url.searchParams.get("employment_type")||"";
+      const seniority=url.searchParams.get("seniority")||"";
+      const salaryMin=url.searchParams.get("salary_min")||"";
+      const days=url.searchParams.get("days")||"";
+      const conditions=[],params=[];
       if(category){conditions.push("LOWER(title) LIKE ?");params.push(`%${category}%`);}
       if(search){conditions.push("(LOWER(title) LIKE ? OR LOWER(company) LIKE ?)");params.push(`%${search.toLowerCase()}%`,`%${search.toLowerCase()}%`);}
       if(remoteType){conditions.push("remote_type = ?");params.push(remoteType);}
@@ -1280,32 +1712,31 @@ export default {
       if(salaryMin){conditions.push("CAST(REPLACE(REPLACE(salary,'$',''),'k','') AS INTEGER) >= ?");params.push(parseInt(salaryMin));}
       if(days){conditions.push("created_at >= datetime('now', '-' || ? || ' days')");params.push(parseInt(days));}
       const where=conditions.length?" WHERE "+conditions.join(" AND "):"";
-      const { results } = await env.DB.prepare(`SELECT * FROM jobs${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`).bind(...params).all();
-      const { results:cr } = await env.DB.prepare(`SELECT COUNT(*) as total FROM jobs${where}`).bind(...params).all();
-      return new Response(JSON.stringify({ jobs:results, total:cr[0]?.total||0, page }), { headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"} });
+      const {results}=await env.DB.prepare(`SELECT * FROM jobs${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`).bind(...params).all();
+      const {results:cr}=await env.DB.prepare(`SELECT COUNT(*) as total FROM jobs${where}`).bind(...params).all();
+      return new Response(JSON.stringify({jobs:results,total:cr[0]?.total||0,page}),{headers:{"Content-Type":"application/json","Access-Control-Allow-Origin":"*"}});
     }
 
-    if (url.pathname === '/api/sync') {
+    if (url.pathname==='/api/sync') {
       try {
-        const result = await syncJobs(env);
-        return new Response(JSON.stringify({ success:true, ...result }), { headers:{"Content-Type":"application/json"} });
-      } catch(e) { return new Response(JSON.stringify({ success:false, error:e.message }), { status:500, headers:{"Content-Type":"application/json"} }); }
+        const result=await syncJobs(env);
+        return new Response(JSON.stringify({success:true,...result}),{headers:{"Content-Type":"application/json"}});
+      } catch(e) { return new Response(JSON.stringify({success:false,error:e.message}),{status:500,headers:{"Content-Type":"application/json"}}); }
     }
 
-    if (url.pathname === '/api/debug') {
-      const { results } = await env.DB.prepare("SELECT COUNT(*) as count FROM jobs").all();
-      return new Response(JSON.stringify({ jobs_in_db:results[0]?.count||0, api_key_set:!!env.API_KEY }), { headers:{"Content-Type":"application/json"} });
+    if (url.pathname==='/api/debug') {
+      const {results}=await env.DB.prepare("SELECT COUNT(*) as count FROM jobs").all();
+      return new Response(JSON.stringify({jobs_in_db:results[0]?.count||0,api_key_set:!!env.API_KEY}),{headers:{"Content-Type":"application/json"}});
     }
 
-    if (url.pathname === '/api/migrate') {
+    if (url.pathname==='/api/migrate') {
       await env.DB.prepare("DROP TABLE IF EXISTS jobs").run();
       await env.DB.prepare("DROP TABLE IF EXISTS subscribers").run();
       await ensureTable(env);
-      return new Response(JSON.stringify({ success:true }), { headers:{"Content-Type":"application/json"} });
+      return new Response(JSON.stringify({success:true}),{headers:{"Content-Type":"application/json"}});
     }
 
-    // ── HOME ──
-    return new Response(MAIN_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    return new Response(MAIN_HTML,{headers:{"Content-Type":"text/html; charset=utf-8"}});
   },
 
   async scheduled(event, env, ctx) {
