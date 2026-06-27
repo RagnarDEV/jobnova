@@ -79,9 +79,10 @@ a{color:inherit;text-decoration:none}
 @keyframes toast-bar{from{width:100%}to{width:0%}}
 `;
 
+// ── NAV CSS — الـ nav يختفي على الموبايل ويحل محله mob-hdr ──
 const NAV_CSS = `
 .nav{
-  background:rgba(3,6,15,.9);
+  background:rgba(3,6,15,.95);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   padding:0 20px;height:58px;
@@ -103,10 +104,14 @@ const NAV_CSS = `
   color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;
   transition:all .2s;box-shadow:0 3px 12px rgba(79,142,247,.3);
 }
-.nav-cta:hover{transform:translateY(-1px);box-shadow:0 5px 20px rgba(79,142,247,.4)}
-@media(max-width:640px){.nav-links .nav-link{display:none}}
-media(max-width:768px){.nav{display:none}}
+.nav-cta:hover{transform:translateY(-1px)}
+@media(max-width:768px){
+  .nav{display:none !important}
+}
 `;
+
+const BASE_URL = 'https://jobnova.manasa.workers.dev';
+
 function baseLayout(title, description, canonical, ogImage, content, extraHead='') {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -123,7 +128,7 @@ function baseLayout(title, description, canonical, ogImage, content, extraHead='
 <meta property="og:url" content="${canonical}">
 ${ogImage?`<meta property="og:image" content="${ogImage}">`:''}
 <link rel="canonical" href="${canonical}">
-<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="https://app.jobnova.workers.dev/feed.rss">
+<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="${BASE_URL}/feed.rss">
 ${extraHead}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -133,7 +138,6 @@ ${SHARED_CSS}${NAV_CSS}
 .page-sm{max-width:680px;margin:0 auto;padding:36px 20px 72px}
 .breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t3);margin-bottom:28px;flex-wrap:wrap}
 .breadcrumb a{color:var(--accent2)}.breadcrumb a:hover{color:var(--t1)}
-
 .job-hero{background:var(--card);border:1px solid var(--border2);border-radius:18px;overflow:hidden;margin-bottom:20px;position:relative}
 .job-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent3),var(--purple),var(--accent2))}
 .job-hero-hdr{padding:28px 24px}
@@ -152,7 +156,6 @@ ${SHARED_CSS}${NAV_CSS}
 .desc-wrap{font-size:14px;color:var(--t2);line-height:1.85;margin-bottom:24px;white-space:pre-line}
 .apply-big{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--accent3),var(--accent));color:#fff;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:all .25s;box-shadow:0 4px 20px rgba(79,142,247,.35)}
 .apply-big:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(79,142,247,.5)}
-
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
 .tag-remote{background:rgba(0,214,143,.1);color:var(--green);border:1px solid rgba(0,214,143,.2)}
 .tag-hybrid{background:rgba(255,181,71,.1);color:var(--amber);border:1px solid rgba(255,181,71,.2)}
@@ -161,7 +164,6 @@ ${SHARED_CSS}${NAV_CSS}
 .tag-new{background:rgba(0,214,143,.12);color:var(--green);border:1px solid rgba(0,214,143,.25);font-size:10px;padding:3px 9px;font-weight:800;letter-spacing:.8px;border-radius:20px;animation:pulse-green 2.5s ease-in-out infinite}
 .tag-hot{background:rgba(255,92,122,.12);color:var(--red);border:1px solid rgba(255,92,122,.25);font-size:10px;padding:3px 9px;font-weight:800;border-radius:20px}
 .tag-featured{background:rgba(139,92,246,.12);color:var(--purple);border:1px solid rgba(139,92,246,.25);font-size:10px;padding:3px 9px;font-weight:800;border-radius:20px}
-
 .related-title{font-size:17px;font-weight:800;margin-bottom:14px;color:var(--t1)}
 .related-grid{display:flex;flex-direction:column;gap:8px}
 .related-card{background:var(--card);border:1px solid var(--border2);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;transition:all .2s;text-decoration:none}
@@ -172,7 +174,6 @@ ${SHARED_CSS}${NAV_CSS}
 .related-jt{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .related-co{font-size:12px;color:var(--accent2)}
 .related-sal{font-size:12px;font-weight:700;color:var(--salary);white-space:nowrap}
-
 .article-cat{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:12px}
 .article-title{font-size:28px;font-weight:900;letter-spacing:-.5px;line-height:1.25;margin-bottom:14px;color:var(--t1)}
 .article-meta{font-size:12px;color:var(--t3);display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap}
@@ -182,7 +183,6 @@ ${SHARED_CSS}${NAV_CSS}
 .article-body ul{padding-left:20px;margin-bottom:14px}
 .article-body ul li{margin-bottom:8px}
 .article-body strong{color:var(--t1)}
-
 .static-title{font-size:26px;font-weight:900;margin-bottom:8px;color:var(--t1)}
 .static-date{font-size:12px;color:var(--t3);margin-bottom:28px}
 .static-body h2{font-size:17px;font-weight:700;margin:24px 0 10px;color:var(--t1)}
@@ -190,20 +190,16 @@ ${SHARED_CSS}${NAV_CSS}
 .static-body ul{padding-left:18px;margin-bottom:10px}
 .static-body ul li{font-size:14px;color:var(--t2);line-height:1.8;margin-bottom:6px}
 .static-body a{color:var(--accent2)}
-
 .back-link{display:inline-flex;align-items:center;gap:7px;color:var(--t3);font-size:13px;font-weight:500;transition:color .2s;margin-bottom:24px;text-decoration:none}
 .back-link:hover{color:var(--accent2)}
-
 .footer{border-top:1px solid var(--border);padding:32px 20px;margin-top:32px}
 .footer-inner{max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
 .footer-logo{font-size:18px;font-weight:900;background:linear-gradient(135deg,#4F8EF7,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .footer-links{display:flex;gap:16px;flex-wrap:wrap}
 .footer-link{font-size:12px;color:var(--t3);transition:color .2s}.footer-link:hover{color:var(--t2)}
 .footer-copy{font-size:11px;color:var(--t3);width:100%}
-
 .ad-wrap{display:flex;justify-content:center;align-items:center;overflow:hidden;margin:12px 0;max-height:68px}
 .ad-label{font-size:9px;color:var(--t3);text-align:center;margin-bottom:3px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
-
 @media(max-width:640px){
   .job-title-h1{font-size:20px}
   .article-title{font-size:22px}
@@ -270,7 +266,6 @@ function renderJobPage(job, related, base) {
   const desc = job.description && job.description.length > 20
     ? job.description.slice(0,160).replace(/\n/g,' ')+'...'
     : `${job.title} at ${job.company}. ${job.location||'Remote'}${job.salary?' — '+job.salary:''}. Apply on JobNova.`;
-
   const schema = JSON.stringify({
     "@context":"https://schema.org","@type":"JobPosting",
     "title":job.title,"description":job.description||desc,
@@ -281,22 +276,14 @@ function renderJobPage(job, related, base) {
     "url":canonical,"directApply":true,
     ...(job.salary?{"baseSalary":{"@type":"MonetaryAmount","currency":"USD","value":{"@type":"QuantitativeValue","value":job.salary}}}:{})
   });
-
   const content = `
 <div class="page">
-  <div class="breadcrumb">
-    <a href="/">JobNova</a><span>›</span>
-    <a href="/">Jobs</a><span>›</span>
-    <span>${job.title}</span>
-  </div>
+  <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><a href="/">Jobs</a><span>›</span><span>${job.title}</span></div>
   <div class="job-hero">
     <div class="job-hero-hdr">
       <div class="job-co-row">
         ${logoImgHtml(job.company,'64px','job-logo')}
-        <div>
-          <div class="job-co-name">${job.company}</div>
-          <div class="job-co-loc">📍 ${job.location||'Remote'}</div>
-        </div>
+        <div><div class="job-co-name">${job.company}</div><div class="job-co-loc">📍 ${job.location||'Remote'}</div></div>
       </div>
       <h1 class="job-title-h1">${job.title}</h1>
       <div class="job-chips">
@@ -311,7 +298,7 @@ function renderJobPage(job, related, base) {
     <div class="job-body">
       ${skills.length?`<div class="sec-label">Required Skills</div><div class="skills-wrap">${skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>`:''}
       <div class="sec-label">About the Role</div>
-      <div class="desc-wrap">${job.description&&job.description.length>20?job.description:'Full description available on the company website. Click Apply Now to view complete details.'}</div>
+      <div class="desc-wrap">${job.description&&job.description.length>20?job.description:'Full description available on the company website.'}</div>
       <div class="ad-wrap"><div style="text-align:center"><div class="ad-label">Advertisement</div>
         <script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};</script>
         <script src="https://www.highperformanceformat.com/f9df5bf8e15c630ee01718f64c6edfb3/invoke.js"></script>
@@ -325,10 +312,7 @@ function renderJobPage(job, related, base) {
       ${related.map(r=>`
         <a href="/job/${r.id}" class="related-card">
           ${logoImgHtml(r.company,'38px','related-logo')}
-          <div class="related-info">
-            <div class="related-jt">${r.title}</div>
-            <div class="related-co">${r.company}</div>
-          </div>
+          <div class="related-info"><div class="related-jt">${r.title}</div><div class="related-co">${r.company}</div></div>
           ${r.salary?`<div class="related-sal">${r.salary}</div>`:''}
           <span style="color:var(--t3)">›</span>
         </a>`).join('')}
@@ -338,7 +322,6 @@ function renderJobPage(job, related, base) {
     <div id="container-240c21d3732d67f320e55d7618105288"></div>
   </div></div>
 </div>`;
-
   return baseLayout(`${job.title} at ${job.company} — JobNova`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script>`);
 }
 
@@ -434,23 +417,30 @@ const MAIN_HTML = `<!DOCTYPE html>
 <meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobNova — Find Your Next Remote Job</title>
-<meta name="description" content="JobNova is a modern remote job board with 600+ curated positions in development, design, marketing, data, and more. Updated hourly.">
+<meta name="description" content="JobNova is a modern remote job board with 1000+ curated positions in development, design, marketing, data, and more. Updated hourly.">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="JobNova — Find Your Next Remote Job">
-<meta property="og:description" content="600+ curated remote jobs updated hourly.">
+<meta property="og:description" content="1000+ curated remote jobs updated hourly.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://app.jobnova.workers.dev">
-<link rel="canonical" href="https://app.jobnova.workers.dev">
-<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="https://app.jobnova.workers.dev/feed.rss">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"JobNova","url":"https://app.jobnova.workers.dev","potentialAction":{"@type":"SearchAction","target":"https://app.jobnova.workers.dev/?search={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<meta property="og:url" content="https://jobnova.manasa.workers.dev">
+<link rel="canonical" href="https://jobnova.manasa.workers.dev">
+<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="https://jobnova.manasa.workers.dev/feed.rss">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"JobNova","url":"https://jobnova.manasa.workers.dev","potentialAction":{"@type":"SearchAction","target":"https://jobnova.manasa.workers.dev/?search={search_term_string}","query-input":"required name=search_term_string"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 ${SHARED_CSS}
 ${NAV_CSS}
 
-/* TICKER */
-.ticker-wrap{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 0;overflow:hidden;position:sticky;top:58px;z-index:90}
+/* ── TICKER ── */
+.ticker-wrap{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:8px 0;overflow:hidden;
+  position:sticky;
+  /* على الديسكتوب: تحت الـ nav (58px) */
+  top:58px;
+  z-index:90;
+}
 .ticker-track{display:flex;gap:48px;animation:ticker 40s linear infinite;white-space:nowrap;width:max-content}
 .ticker-track:hover{animation-play-state:paused}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -458,15 +448,11 @@ ${NAV_CSS}
 .t-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite;box-shadow:0 0 5px var(--green)}
 .t-item strong{color:var(--accent2)}
 
-/* LAYOUT */
+/* ── LAYOUT ── */
 .app{display:flex;min-height:calc(100vh - 94px)}
 
-/* SIDEBAR */
-.sidebar{
-  width:250px;background:var(--bg2);border-right:1px solid var(--border);
-  padding:20px 16px;position:sticky;top:94px;height:calc(100vh - 94px);
-  overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:18px;
-}
+/* ── SIDEBAR ── */
+.sidebar{width:250px;background:var(--bg2);border-right:1px solid var(--border);padding:20px 16px;position:sticky;top:94px;height:calc(100vh - 94px);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;gap:18px}
 .sidebar::-webkit-scrollbar{width:3px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--border2)}
 .logo{font-size:22px;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,#4F8EF7 0%,#A78BFA 50%,#4F8EF7 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;line-height:1.1;animation:shimmer 4s linear infinite}
@@ -487,52 +473,35 @@ ${NAV_CSS}
 .footer-link-s{font-size:11px;color:var(--t3);padding:3px 0;transition:color .2s;cursor:pointer;background:none;border:none;font-family:inherit;text-align:left;text-decoration:none;display:block}
 .footer-link-s:hover{color:var(--t2)}
 
-/* MAIN */
+/* ── MAIN ── */
 .main{flex:1;min-width:0}
 
-/* HERO */
-.hero{
-  padding:36px 20px 28px;border-bottom:1px solid var(--border);
-  background:radial-gradient(ellipse 80% 60% at 30% 50%,rgba(79,142,247,.07),transparent);
-  position:relative;
-}
-.hero-eyebrow{
-  display:inline-flex;align-items:center;gap:7px;
-  background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.18);
-  border-radius:20px;padding:4px 12px;font-size:11px;
-  color:var(--accent2);font-weight:600;margin-bottom:16px;
-}
+/* ── HERO ── */
+.hero{padding:36px 20px 28px;border-bottom:1px solid var(--border);background:radial-gradient(ellipse 80% 60% at 30% 50%,rgba(79,142,247,.07),transparent)}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.18);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--accent2);font-weight:600;margin-bottom:16px}
 .hero-eyebrow-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
 .hero-title{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1.2;margin-bottom:10px;color:var(--t1)}
 .hero-title .hl{background:linear-gradient(135deg,var(--accent),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{color:var(--t2);font-size:14px;margin-bottom:20px;line-height:1.65;max-width:480px}
-
-/* HERO STATS — مصلحة للموبايل */
 .hero-stats{display:flex;gap:0;margin-bottom:20px;background:var(--card);border:1px solid var(--border2);border-radius:12px;overflow:hidden}
 .hero-stat{flex:1;padding:12px 10px;text-align:center;border-right:1px solid var(--border)}
 .hero-stat:last-child{border-right:none}
 .hero-stat-num{font-size:18px;font-weight:800;color:var(--t1);display:block;line-height:1.2}
 .hero-stat-label{font-size:10px;color:var(--t3);font-weight:500;letter-spacing:.5px;text-transform:uppercase}
-
 .search-wrap{position:relative;max-width:100%}
 .search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;font-size:15px}
-.search-input{
-  width:100%;background:var(--card);
-  border:1.5px solid var(--border2);border-radius:12px;
-  padding:13px 16px 13px 44px;
-  color:var(--t1);font-size:14px;font-family:inherit;outline:none;transition:all .25s;
-}
+.search-input{width:100%;background:var(--card);border:1.5px solid var(--border2);border-radius:12px;padding:13px 16px 13px 44px;color:var(--t1);font-size:14px;font-family:inherit;outline:none;transition:all .25s}
 .search-input::placeholder{color:var(--t3)}
 .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
 
-/* FILTER BAR */
+/* ── FILTER BAR ── */
 .filters-bar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;overflow-x:auto;background:var(--bg2)}
 .filters-bar::-webkit-scrollbar{height:0}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--card);color:var(--t2);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .2s}
 .chip:hover{border-color:var(--accent3);color:var(--accent2)}
 .chip.active{background:linear-gradient(135deg,var(--accent3),var(--accent));border-color:transparent;color:#fff;box-shadow:0 3px 12px rgba(79,142,247,.3)}
 
-/* ADV FILTERS */
+/* ── ADV FILTERS ── */
 .adv-filters{padding:12px 20px;border-bottom:1px solid var(--border);display:none;gap:10px;flex-wrap:wrap;background:var(--bg);align-items:flex-end}
 .adv-filters.open{display:flex}
 .filter-select{background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--t2);font-size:12px;font-family:inherit;cursor:pointer;outline:none}
@@ -543,7 +512,7 @@ ${NAV_CSS}
 .clear-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--t3);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
 .clear-btn:hover{color:var(--red);border-color:var(--red)}
 
-/* CONTENT */
+/* ── CONTENT ── */
 .content-wrap{padding:20px}
 .results-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap}
 .results-count{font-size:13px;color:var(--t3)}
@@ -551,42 +520,22 @@ ${NAV_CSS}
 .adv-toggle-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--card);color:var(--t2);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:500}
 .adv-toggle-btn:hover,.adv-toggle-btn.active{background:var(--glow2);border-color:var(--accent3);color:var(--accent2)}
 
-/* JOB CARDS — محسّنة للموبايل */
+/* ── JOB CARDS ── */
 .jobs-list{display:flex;flex-direction:column;gap:8px}
-
-.job-card{
-  background:var(--card);border:1px solid var(--border2);
-  border-radius:14px;display:block;text-decoration:none;
-  color:inherit;transition:all .25s;position:relative;overflow:hidden;
-}
-.job-card::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,var(--accent3),var(--purple));
-  opacity:0;transition:opacity .25s;border-radius:3px 0 0 3px;
-}
+.job-card{background:var(--card);border:1px solid var(--border2);border-radius:14px;display:block;text-decoration:none;color:inherit;transition:all .25s;position:relative;overflow:hidden}
+.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--accent3),var(--purple));opacity:0;transition:opacity .25s;border-radius:3px 0 0 3px}
 .job-card:hover{border-color:rgba(79,142,247,.3);transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,0,0,.35);background:var(--card2)}
 .job-card:hover::before{opacity:1}
-
-/* CARD INNER — layout مضبوط للموبايل */
 .card-inner{padding:16px}
 .card-row1{display:flex;align-items:flex-start;gap:12px}
-.co-logo{
-  width:46px;height:46px;border-radius:10px;
-  background:var(--bg2);border:1px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:800;color:var(--accent2);
-  overflow:hidden;flex-shrink:0;
-}
+.co-logo{width:46px;height:46px;border-radius:10px;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--accent2);overflow:hidden;flex-shrink:0}
 .co-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
-
 .card-body{flex:1;min-width:0}
 .card-badges{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
 .job-title-card{font-size:14px;font-weight:700;color:var(--t1);line-height:1.3;margin-bottom:4px;transition:color .2s}
 .job-card:hover .job-title-card{color:var(--accent2)}
 .job-co-card{font-size:12px;color:var(--accent2);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px}
 .job-meta-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-
-/* RIGHT SIDE — يظهر على سطر منفصل على الموبايل */
 .card-right{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .salary-badge{font-size:12px;font-weight:700;color:var(--salary);background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.18);padding:4px 12px;border-radius:8px;white-space:nowrap}
 .card-actions{display:flex;align-items:center;gap:5px}
@@ -595,11 +544,9 @@ ${NAV_CSS}
 .act-btn.saved{background:rgba(255,181,71,.1);border-color:var(--amber);color:var(--amber)}
 .arr-btn{width:32px;height:32px;border-radius:8px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.18);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .25s}
 .job-card:hover .arr-btn{background:linear-gradient(135deg,var(--accent3),var(--accent));border-color:transparent;color:#fff}
-
-/* CARD FOOTER */
 .card-footer{padding:8px 16px;border-top:1px solid var(--border);background:rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--t3)}
 
-/* TAGS */
+/* ── TAGS ── */
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
 .tag-loc{color:var(--t3);font-size:11px}
 .tag-remote{background:rgba(0,214,143,.1);color:var(--green);border:1px solid rgba(0,214,143,.2)}
@@ -610,34 +557,32 @@ ${NAV_CSS}
 .tag-hot{background:rgba(255,92,122,.12);color:var(--red);border:1px solid rgba(255,92,122,.25);font-size:10px;padding:2px 8px;font-weight:800;border-radius:20px}
 .tag-featured{background:rgba(139,92,246,.12);color:var(--purple);border:1px solid rgba(139,92,246,.25);font-size:10px;padding:2px 8px;font-weight:800;border-radius:20px}
 
-/* TOAST */
+/* ── TOAST ── */
 .toast{position:fixed;bottom:20px;right:16px;background:var(--card2);border:1px solid var(--border2);border-radius:12px;padding:12px 18px;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);transform:translateY(100px);opacity:0;transition:all .3s;z-index:9999;max-width:300px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast-bar{position:absolute;bottom:0;left:0;height:2px;background:var(--accent);border-radius:0 0 12px 12px;animation:toast-bar 3s linear forwards}
 
-/* EMPTY / LOADER */
+/* ── EMPTY / LOADER ── */
 .empty{text-align:center;padding:60px 16px;color:var(--t3)}
 .empty .e-icon{font-size:44px;margin-bottom:12px;opacity:.4}
 .empty h3{font-size:17px;color:var(--t2);margin-bottom:6px;font-weight:700}
 .empty p{font-size:13px}
 .loader-wrap{padding:60px 16px;text-align:center}
 .loader{display:inline-block;width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-
-/* SKELETON */
 .skel{background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:8px}
 
-/* PAGINATION */
+/* ── PAGINATION ── */
 .pagination{display:flex;align-items:center;justify-content:center;gap:7px;padding:24px 0 12px}
 .page-btn{padding:8px 16px;border-radius:9px;border:1.5px solid var(--border2);background:var(--card);color:var(--t2);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .2s}
 .page-btn:hover:not(:disabled){border-color:var(--accent3);color:var(--accent2)}
 .page-btn:disabled{opacity:.3;cursor:default}
 .page-info{font-size:13px;color:var(--t3);padding:0 8px}
 
-/* AD */
+/* ── AD ── */
 .ad-wrap{display:flex;justify-content:center;align-items:center;overflow:hidden;margin:10px 0;max-height:68px}
 .ad-label{font-size:9px;color:var(--t3);text-align:center;margin-bottom:3px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5}
 
-/* FORMS */
+/* ── FORMS ── */
 .form-card{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:28px 20px;max-width:540px}
 .form-group{margin-bottom:18px}
 .form-label{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:7px;display:block;letter-spacing:.5px;text-transform:uppercase}
@@ -649,49 +594,85 @@ ${NAV_CSS}
 .kw-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent2);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:3px}
 .kw-chip button{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:14px;line-height:1;padding:0;opacity:.7}
 
-/* LIGHT MODE */
-body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8FF;--border:#D0DCF0;--border2:#C0CCEA;--t1:#0A1628;--t2:#3D5577;--t3:#8099B8}
+/* ── LIGHT MODE ── */
+body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--card:#FFFFFF;--card2:#F5F8FF;--border:#D0DCF0;--border2:#C0CCEA;--t1:#0A1628;--t2:#3D5577;--t3:#8099B8}
 
-/* MOBILE HEADER */
-.mob-hdr{display:none;padding:12px 16px;background:rgba(3,6,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);align-items:center;justify-content:space-between;position:sticky;top:58px;z-index:80;gap:10px}
-.mob-logo{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#4F8EF7,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* ── MOBILE HEADER ──
+   يظهر فقط على الموبايل ويحل محل الـ nav تماماً
+   top:0 لأن الـ nav مخفي على الموبايل */
+.mob-hdr{
+  display:none;
+  padding:0 16px;
+  height:58px;
+  background:rgba(3,6,15,.97);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:200;
+  gap:10px;
+}
+.mob-logo{font-size:19px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(135deg,#4F8EF7,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .mob-btns{display:flex;gap:6px}
-.mob-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border2);background:var(--card);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .2s}
+.mob-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border2);background:var(--card2);color:var(--t2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s}
 .mob-btn:hover{border-color:var(--accent3);color:var(--accent2)}
 
-/* DRAWER */
+/* ── DRAWER ── */
 .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;backdrop-filter:blur(4px)}
 .drawer-overlay.open{display:block}
 .mob-drawer{position:fixed;top:0;left:-280px;width:264px;height:100vh;background:var(--bg2);border-right:1px solid var(--border2);z-index:301;transition:left .3s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:20px 14px;display:flex;flex-direction:column;gap:18px}
 .mob-drawer.open{left:0}
 .drawer-close{position:absolute;top:14px;right:14px;background:var(--card);border:1px solid var(--border2);color:var(--t2);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
 
-/* RESPONSIVE FIXES */
+/* ══════════════════════════════════════
+   RESPONSIVE — الإصلاح الكامل للموبايل
+   ══════════════════════════════════════ */
 @media(max-width:768px){
-  .sidebar{display:none}
-  .nav{display:none}
-  .mob-hdr{display:flex;top:0}
+  /* 1. إخفاء الـ nav الرئيسي */
+  .nav{display:none !important}
+
+  /* 2. إظهار mob-hdr في أعلى الصفحة */
+  .mob-hdr{display:flex}
+
+  /* 3. الـ ticker يأتي بعد mob-hdr (58px) */
   .ticker-wrap{top:58px}
+
+  /* 4. إخفاء السايدبار */
+  .sidebar{display:none}
+
+  /* 5. الـ app يبدأ بعد mob-hdr + ticker */
   .app{min-height:calc(100vh - 94px)}
+
+  /* Hero */
   .hero{padding:22px 16px 20px}
   .hero-title{font-size:22px;letter-spacing:-.5px}
-  .hero-sub{font-size:13px}
-  .hero-eyebrow{font-size:10px;padding:3px 10px}
-  /* Stats row صحيحة */
+  .hero-sub{font-size:13px;margin-bottom:16px}
+  .hero-eyebrow{font-size:10px;padding:3px 10px;margin-bottom:12px}
   .hero-stats{margin-bottom:16px}
+  .hero-stat{padding:10px 8px}
   .hero-stat-num{font-size:16px}
   .hero-stat-label{font-size:9px}
   .search-input{font-size:14px;padding:12px 14px 12px 40px}
+
+  /* Filters */
   .filters-bar{padding:10px 14px;gap:6px}
   .chip{padding:5px 11px;font-size:11px}
   .adv-filters{padding:12px 14px}
-  .content-wrap{padding:14px 12px}
+
+  /* Content */
+  .content-wrap{padding:12px}
+
   /* Cards */
   .card-inner{padding:14px 12px}
   .co-logo{width:42px;height:42px;border-radius:9px}
   .job-title-card{font-size:13px}
-  .job-co-card{font-size:11px}
+  .job-co-card{font-size:11px;margin-bottom:6px}
   .card-footer{padding:7px 12px}
+
+  /* Pagination */
   .pagination{padding:20px 0 10px;gap:6px}
   .page-btn{padding:7px 12px;font-size:12px}
 }
@@ -705,7 +686,10 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
 </head>
 <body>
 
+<!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- MOBILE DRAWER -->
 <div class="mob-drawer" id="mobDrawer">
   <button class="drawer-close" onclick="closeDrawer()">✕</button>
   <div><span class="logo">JobNova</span><span class="logo-sub">Career Platform</span></div>
@@ -736,7 +720,7 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
   </div>
 </div>
 
-<!-- NAV -->
+<!-- DESKTOP NAV (مخفي على الموبايل) -->
 <nav class="nav">
   <a href="/" class="nav-logo">JobNova</a>
   <div class="nav-links">
@@ -747,16 +731,16 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
   </div>
 </nav>
 
-<!-- TICKER -->
+<!-- TICKER (sticky بعد nav على ديسكتوب، وبعد mob-hdr على موبايل) -->
 <div class="ticker-wrap">
   <div class="ticker-track">
-    <span class="t-item"><span class="t-dot"></span><strong id="tc1">669</strong> Active Jobs</span>
+    <span class="t-item"><span class="t-dot"></span><strong id="tc1">1000+</strong> Active Jobs</span>
     <span class="t-item">💼 Updated hourly</span>
     <span class="t-item">🌍 Remote-first worldwide</span>
     <span class="t-item">⚡ Dev · Design · Marketing · Data</span>
     <span class="t-item">✅ Verified listings</span>
     <span class="t-item">🚀 New jobs every hour</span>
-    <span class="t-item"><span class="t-dot"></span><strong id="tc2">669</strong> Active Jobs</span>
+    <span class="t-item"><span class="t-dot"></span><strong id="tc2">1000+</strong> Active Jobs</span>
     <span class="t-item">💼 Updated hourly</span>
     <span class="t-item">🌍 Remote-first worldwide</span>
     <span class="t-item">⚡ Dev · Design · Marketing · Data</span>
@@ -765,7 +749,7 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
   </div>
 </div>
 
-<!-- MOBILE HEADER -->
+<!-- MOBILE HEADER (يظهر فقط على الموبايل، top:0) -->
 <div class="mob-hdr">
   <span class="mob-logo">JobNova</span>
   <div class="mob-btns">
@@ -776,7 +760,7 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
 </div>
 
 <div class="app">
-  <!-- SIDEBAR -->
+  <!-- SIDEBAR (مخفي على الموبايل) -->
   <aside class="sidebar">
     <div><span class="logo">JobNova</span><span class="logo-sub">Career Platform</span></div>
     <div>
@@ -799,7 +783,6 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
       <a href="/blog" class="nav-btn" style="text-decoration:none"><span class="nav-icon">📝</span>Career Blog</a>
       <button class="nav-btn" onclick="toggleTheme()"><span class="nav-icon" id="themeNavIcon">🌙</span>Dark / Light</button>
     </div>
-    <!-- AD SIDEBAR -->
     <div>
       <div style="font-size:9px;color:var(--t3);text-align:center;margin-bottom:4px;letter-spacing:1.5px;text-transform:uppercase;opacity:.5">Advertisement</div>
       <div style="display:flex;justify-content:center;overflow:hidden;border-radius:8px;max-height:60px">
@@ -830,36 +813,19 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
     <!-- JOBS VIEW -->
     <div id="vJobs">
       <div class="hero">
-        <div class="hero-eyebrow">
-          <span class="hero-eyebrow-dot"></span>
-          AI-Powered Job Matching — Updated Every Hour
-        </div>
+        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>AI-Powered Job Matching — Updated Every Hour</div>
         <h1 class="hero-title">Find Your Next<br><span class="hl">Remote Career</span> Opportunity</h1>
-        <p class="hero-sub">600+ curated jobs in tech, design, marketing & more.</p>
-        <!-- HERO STATS — منتظمة -->
+        <p class="hero-sub">1000+ curated jobs in tech, design, marketing & more.</p>
         <div class="hero-stats">
-          <div class="hero-stat">
-            <span class="hero-stat-num" id="stat-jobs">600+</span>
-            <span class="hero-stat-label">Active Jobs</span>
-          </div>
-          <div class="hero-stat">
-            <span class="hero-stat-num">50+</span>
-            <span class="hero-stat-label">Companies</span>
-          </div>
-          <div class="hero-stat">
-            <span class="hero-stat-num">Hourly</span>
-            <span class="hero-stat-label">Updates</span>
-          </div>
+          <div class="hero-stat"><span class="hero-stat-num" id="stat-jobs">1000+</span><span class="hero-stat-label">Active Jobs</span></div>
+          <div class="hero-stat"><span class="hero-stat-num">50+</span><span class="hero-stat-label">Companies</span></div>
+          <div class="hero-stat"><span class="hero-stat-num">Hourly</span><span class="hero-stat-label">Updates</span></div>
         </div>
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="searchInput"
-            placeholder="Search jobs, companies, or skills..."
-            oninput="debounceSearch(this.value)">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search jobs, companies, or skills..." oninput="debounceSearch(this.value)">
         </div>
       </div>
-
-      <!-- ❌ تم حذف الإعلان الذي كان هنا تحت البحث -->
 
       <div class="filters-bar">
         <button class="chip active" onclick="filterCat('','All Jobs')">All Jobs</button>
@@ -886,7 +852,6 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
           <div class="results-count" id="resultsCount">Loading...</div>
           <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
         </div>
-        <!-- AD BEFORE JOBS — صغير -->
         <div class="ad-wrap"><div style="text-align:center">
           <div class="ad-label">Advertisement</div>
           <script>atOptions={'key':'f9df5bf8e15c630ee01718f64c6edfb3','format':'iframe','height':50,'width':320,'params':{}};</script>
@@ -902,7 +867,7 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
       <div class="content-wrap" style="max-width:800px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
           <h2 style="font-size:20px;font-weight:800;color:var(--t1)">🔖 Saved Jobs</h2>
-          <button onclick="clearAllSaved()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--t3);font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--t3)'">Clear All</button>
+          <button onclick="clearAllSaved()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--t3);font-size:12px;cursor:pointer;font-family:inherit" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--t3)'">Clear All</button>
         </div>
         <div class="jobs-list" id="savedList"></div>
       </div>
@@ -911,7 +876,7 @@ body.light{--bg:#F0F4FF;--bg2:#E8EFF9;--bg3:#E0E8F5;--card:#FFFFFF;--card2:#F5F8
     <!-- ALERTS -->
     <div id="vAlerts" style="display:none">
       <div class="content-wrap">
-        <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:7px;color:var(--t3);font-size:13px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:22px;transition:color .2s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t3)'">← Back to Jobs</button>
+        <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:7px;color:var(--t3);font-size:13px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:22px" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--t3)'">← Back to Jobs</button>
         <div class="form-card">
           <div style="font-size:20px;font-weight:800;margin-bottom:6px;color:var(--t1)">🔔 Job Alerts</div>
           <div style="font-size:13px;color:var(--t2);margin-bottom:22px">Get notified by email when new matching jobs are posted.</div>
@@ -1038,7 +1003,7 @@ function renderSkeletons(){
             <div class="skel" style="height:11px;width:40%;border-radius:5px"></div>
           </div>
         </div>
-        <div class="card-right" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div class="card-right">
           <div class="skel" style="height:28px;width:90px;border-radius:8px"></div>
           <div style="display:flex;gap:5px">
             <div class="skel" style="width:32px;height:32px;border-radius:8px"></div>
