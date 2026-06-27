@@ -109,9 +109,8 @@ const NAV_CSS = `
   .nav{display:none}
   .ticker-wrap{top:58px}
   .mob-hdr{top:0}
-  .app{min-height:calc(100vh - 94px)}
-';
-
+  .app{min-height:calc(100vh - 94px)};
+} 
 function baseLayout(title, description, canonical, ogImage, content, extraHead='') {
   return `<!DOCTYPE html>
 <html lang="en">
