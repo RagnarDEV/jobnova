@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jobnova.manasa.workers.dev/sitemap.xml
