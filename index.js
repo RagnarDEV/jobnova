@@ -1191,18 +1191,24 @@ export default {
     await ensureTable(env);
 
     if (url.pathname==='/sitemap.xml') {
-      const {results}=await env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
-      const urls=[
-        `<url><loc>${base}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`,
-        `<url><loc>${base}/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
-        `<url><loc>${base}/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
-        `<url><loc>${base}/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
-        `<url><loc>${base}/disclaimer</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
-        ...BLOG_POSTS.map(p=>`<url><loc>${base}/blog/${p.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
-        ...results.map(j=>`<url><loc>${base}/job/${j.id}</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>${new Date(j.created_at||Date.now()).toISOString().split('T')[0]}</lastmod></url>`)
-      ].join('');
-      return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,{headers:{"Content-Type":"application/xml"}});
-    }
+  function xmlEsc(str) {
+    return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+  }
+  const {results}=await env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
+  const urls=[
+    `<url><loc>${base}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`,
+    `<url><loc>${base}/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+    `<url><loc>${base}/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+    `<url><loc>${base}/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+    `<url><loc>${base}/disclaimer</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+    ...BLOG_POSTS.map(p=>`<url><loc>${base}/blog/${p.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
+    ...results.map(j=>`<url><loc>${xmlEsc(`${base}/job/${j.id}`)}</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>${new Date(j.created_at||Date.now()).toISOString().split('T')[0]}</lastmod></url>`)
+  ].join('');
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+    {headers:{"Content-Type":"application/xml; charset=utf-8","Cache-Control":"public, max-age=3600"}}
+  );
+}
 
     if (url.pathname==='/feed.rss') {
       const {results}=await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC LIMIT 50").all();
