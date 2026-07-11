@@ -1,0 +1,45 @@
+name: Extract and Push Project
+
+# تحديد متى يعمل هذا الأكشن تلقائياً
+on:
+  push:
+    branches:
+      - main     # سيعمل الأكشن فوراً عندما تقوم برفع ملف الـ ZIP إلى فرع main
+  workflow_dispatch: # هذا السطر يسمح لك بتشغيل الأكشن يدوياً بزر اضغط عليه من الهاتف
+
+jobs:
+  unzip-and-push:
+    runs-on: ubuntu-latest # تشغيل الأمر على خادم لينكس افتراضي وسريع جداً
+
+    steps:
+    # الخطوة الأولى: سحب ملفات المستودع الحالية داخل الخادم
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    # الخطوة الثانية: فك ضغط الملف وترتيب المجلدات
+    - name: Check and Unzip File
+      run: |
+        if [ -f "project.zip" ]; then
+          echo "جاري فك ضغط ملفات المشروع..."
+          unzip -o project.zip
+          rm project.zip # حذف ملف الـ ZIP بعد فكه لكي لا يأخذ مساحة في مستودعك
+        else
+          echo "خطأ: لم يتم العثور على ملف project.zip في المستودع!"
+          exit 1
+        fi
+
+    # الخطوة الثالثة: حفظ التغييرات (Commit) ورفعها بشكل نهائي للمستودع (Push)
+    - name: Commit and Push Changes
+      run: |
+        # تعريف هويتك الافتراضية لـ Git (بوت جيتهاب)
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        # تجهيز كل الملفات التي تم فكها (بما فيها مجلد src وبقية الملفات)
+        git add .
+        
+        # التأكد من وجود تغييرات حقيقية قبل الحفظ لتجنب حدوث خطأ في الأكشن
+        git diff --quiet && git diff --staged --quiet || git commit -m "تحديث ملفات المشروع من الهاتف وتفريغ الـ ZIP"
+        
+        # رفع الملفات إلى المستودع لتظهر بشكلها الطبيعي
+        git push
