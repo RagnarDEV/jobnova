@@ -1,67 +1,67 @@
 name: Auto Unzip Project
 
-# سيعمل الأكشن تلقائياً فقط عندما تقوم برفع ملف ZIP، مما يوفر وقتك
 on:
   push:
     paths:
       - '**.zip'
   workflow_dispatch:
 
-# إعطاء الصلاحيات الكاملة للبوت لتجنب أي مشكلة تتعلق بالـ 403
 permissions:
   contents: write
 
 jobs:
   extract:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip and Organize Files
+      - name: Find and Extract ZIP
+        shell: bash
         run: |
-          # منع الأكشن من الانهيار (exit code 1) بسبب التحذيرات البسيطة
-          set +e
-          
-          # البحث عن أي ملف ZIP تم رفعه
-          ZIP_NAME=$(ls *.zip 2>/dev/null | head -n 1)
-          
-          if [ -z "$ZIP_NAME" ]; then
-            echo "لا يوجد ملف مضغوط، سيتم تخطي الخطوة."
+          set -e
+
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "No ZIP file found."
             exit 0
           fi
-          
-          echo "جاري فك ضغط $ZIP_NAME ..."
-          
-          # فك الضغط داخل مجلد مؤقت لتجنب تداخل الملفات
-          mkdir temp_workspace
-          unzip -q "$ZIP_NAME" -d temp_workspace
-          
-          # حيلة للعثور على الملفات الحقيقية (حتى لو وضعها هاتفك داخل مجلدات مكررة)
-          PROJECT_DIR=$(dirname $(find temp_workspace -name "package.json" | head -n 1))
-          
-          if [ -z "$PROJECT_DIR" ]; then
-            PROJECT_DIR="temp_workspace"
-          fi
-          
-          # استخراج الملفات للواجهة الرئيسية
-          cp -a "$PROJECT_DIR"/. ./
-          
-          # مسح المجلد المؤقت وملف الـ ZIP
-          rm -rf temp_workspace
-          rm -f "$ZIP_NAME"
-          
-      - name: Commit and Push Changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          git add -A
-          
-          # التأكد من وجود تغييرات فعلية قبل محاولة الحفظ لتجنب (exit code 1)
-          if ! git diff --staged --quiet; then
-            git commit -m "تم فك ضغط المشروع وترتيب الملفات بنجاح"
-            git push
+
+          echo "Found: $ZIP_FILE"
+
+          mkdir extracted
+          unzip -o "$ZIP_FILE" -d extracted
+
+          shopt -s dotglob
+
+          # إذا كان داخل الملف المضغوط مجلد واحد فقط
+          COUNT=$(find extracted -mindepth 1 -maxdepth 1 -type d | wc -l)
+
+          if [ "$COUNT" -eq 1 ] && [ -z "$(find extracted -mindepth 1 -maxdepth 1 -type f)" ]; then
+            ROOT=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+            mv "$ROOT"/* .
+            mv "$ROOT"/.[!.]* . 2>/dev/null || true
           else
-            echo "الملفات مطابقة بالفعل، لا يوجد شيء جديد لحفظه."
+            mv extracted/* .
+            mv extracted/.[!.]* . 2>/dev/null || true
           fi
+
+          rm -rf extracted
+          rm -f "$ZIP_FILE"
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Automatically extracted ZIP project"
+          git push
