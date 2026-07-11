@@ -1,4 +1,4 @@
-name: Ultimate Unzip and Deploy
+name: Deploy Files
 
 on:
   push:
@@ -6,59 +6,53 @@ on:
       - main
   workflow_dispatch:
 
+# هذه الإضافة تجبر المستودع على إعطاء البوت صلاحية الكتابة والرفع دائماً
+permissions:
+  contents: write
+
 jobs:
-  unzip-job:
+  unzip:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Extract Files Safely
-      run: |
-        # 1. البحث عن أي ملف ZIP مرفوع في المستودع
-        ZIP_FILE=$(find . -name "*.zip" | head -n 1)
-        
-        if [ -z "$ZIP_FILE" ]; then
-          echo "لم يتم العثور على أي ملف مضغوط."
-          exit 0
-        fi
-        
-        echo "تم العثور على الملف: $ZIP_FILE"
-        
-        # 2. إنشاء مجلد مؤقت لفك الضغط داخله
-        mkdir -p tmp_extracted
-        unzip -o "$ZIP_FILE" -d tmp_extracted
-        
-        # 3. حذف ملف الـ ZIP الأصلي فوراً لتنظيف المستودع
-        rm -f "$ZIP_FILE"
-        
-        # 4. البحث عن المجلد الفعلي الذي يحتوي على ملف wrangler.toml ونقل محتوياته للمجلد الرئيسي
-        TARGET_DIR=$(find tmp_extracted -name "wrangler.toml" -exec dirname {} \;)
-        
-        if [ ! -z "$TARGET_DIR" ]; then
-          echo "جاري نقل الملفات من المسار الافتراضي للهاتف: $TARGET_DIR"
-          rsync -av "$TARGET_DIR/" ./
-        else
-          echo "جاري نقل الملفات من المجلد المؤقت مباشرة..."
-          rsync -av tmp_extracted/ ./
-        fi
-        
-        # 5. تنظيف المجلدات المؤقتة وأي مجلدات مكررة قديمة
-        rm -rf tmp_extracted
-        rm -rf jobnova
-        rm -rf jobnova-v2
-
-    - name: Push to Repository
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        
-        # تنظيف التتبع وإضافة الملفات بشكل صحيح
-        git rm -r --cached . 2>/dev/null || true
-        git add -A
-        
-        git diff --quiet && git diff --staged --quiet || git commit -m "تفريغ وترتيب ملفات المشروع بالكامل في المجلد الرئيسي"
-        git push origin main
+      - name: Extract and Deploy
+        run: |
+          # منع الأكشن من التوقف إذا واجه تحذير بسيط
+          set +e
+          
+          # التحقق من وجود الملف
+          if [ ! -f "jobnova-v2.zip" ]; then
+            echo "لا يوجد ملف مضغوط، سيتم إيقاف العملية بسلام."
+            exit 0
+          fi
+          
+          # إنشاء مجلد مؤقت وفك الضغط داخله بهدوء
+          mkdir tmp_dir
+          unzip -q jobnova-v2.zip -d tmp_dir
+          
+          # البحث بدقة عن مسار مجلد المشروع الحقيقي
+          ROOT_PATH=$(find tmp_dir -name "package.json" -exec dirname {} \; | head -n 1)
+          
+          if [ -z "$ROOT_PATH" ]; then
+            ROOT_PATH="tmp_dir"
+          fi
+          
+          # نقل جميع الملفات إلى المجلد الرئيسي بشكل آمن
+          rsync -a "$ROOT_PATH/" ./
+          
+          # مسح المخلفات والملف المضغوط
+          rm -rf tmp_dir
+          rm -f jobnova-v2.zip
+          
+          # رفع الملفات
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          
+          # التحقق من وجود تغييرات لرفعها وتجنب خطأ الإيقاف
+          if ! git diff --staged --quiet; then
+            git commit -m "نشر ملفات المشروع النهائية بنجاح"
+            git push
+          fi
