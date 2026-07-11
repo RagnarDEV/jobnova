@@ -14,23 +14,28 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Unzip File to Root Directly
+    - name: Absolute Unzip and Move
       run: |
-        # فك الضغط بأمر -j يمنع إنشاء مجلدات مكررة ويضع الملفات مباشرة في المجلد الرئيسي
-        if [ -f "jobnova-v2.zip" ]; then
-          echo "جاري فك ضغط ملفات المشروع مباشرة..."
-          unzip -o jobnova-v2.zip
-          rm jobnova-v2.zip
-        else
-          # هذا السطر للبحث عن ملف الـ ZIP في أي مكان لو رُفع خطأ داخل مجلد
-          ZIP_PATH=$(find . -name "jobnova-v2.zip" | head -n 1)
-          if [ ! -z "$ZIP_PATH" ]; then
-            unzip -o "$ZIP_PATH"
-            find . -name "jobnova-v2.zip" -delete
-          else
-            echo "لم يتم العثور على ملف jobnova-v2.zip"
-            exit 1
+        # 1. البحث عن ملف الـ ZIP أينما كان وفكه
+        ZIP_FILE=$(find . -name "jobnova-v2.zip" | head -n 1)
+        
+        if [ ! -z "$ZIP_FILE" ]; then
+          echo "تم العثور على الملف المضغوط: $ZIP_FILE"
+          unzip -o "$ZIP_FILE"
+          rm -f "$ZIP_FILE"
+          
+          # 2. حيلة النقل الشاملة: إذا فك الضغط ملفات داخل مجلد باسم jobnova
+          if [ -d "jobnova" ]; then
+            echo "نقل الملفات من المجلد المكرر إلى المجلد الرئيسي..."
+            # نقل كل شيء بما في ذلك الملفات المخفية
+            rsync -a jobnova/ ./
+            # حذف المجلد المكرر بعد النقل
+            rm -rf jobnova
           fi
+          
+        else
+          echo "خطأ: لم يتم العثور على ملف jobnova-v2.zip في المستودع إطلاقاً!"
+          exit 1
         fi
 
     - name: Commit and Push Changes
@@ -38,9 +43,8 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         
-        git add .
-        # إزالة أي مجلدات مكررة فارغة بقيت في النظام
-        git rm -r jobnova 2>/dev/null || true
+        # إخبار جيت بمتابعة جميع التغييرات وحذف المجلد القديم من التتبع
+        git add -A
         
-        git diff --quiet && git diff --staged --quiet || git commit -m "تفريغ الملفات بالكامل في المجلد الرئيسي بنجاح"
+        git diff --quiet && git diff --staged --quiet || git commit -m "إصلاح نهائي: إخراج الملفات للمجلد الرئيسي وتنظيف المستودع"
         git push
