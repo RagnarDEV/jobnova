@@ -49,7 +49,11 @@ jobs:
           rm -rf extracted
           rm -f "$ZIP_FILE"
 
+          # حذف ملفات GitHub Actions القادمة من المشروع
+          rm -rf .github/workflows
+
       - name: Commit and Push
+        shell: bash
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -62,4 +66,5 @@ jobs:
           fi
 
           git commit -m "Automatically extracted ZIP"
-          git push
+
+          git push origin HEAD:main
