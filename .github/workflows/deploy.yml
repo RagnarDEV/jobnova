@@ -3,7 +3,7 @@ name: Auto Unzip Project
 on:
   push:
     paths:
-      - '**.zip'
+      - "**.zip"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Find and Extract ZIP
+      - name: Extract ZIP
         shell: bash
         run: |
           set -e
@@ -29,39 +29,37 @@ jobs:
             exit 0
           fi
 
-          echo "Found: $ZIP_FILE"
+          echo "ZIP: $ZIP_FILE"
 
           mkdir extracted
           unzip -o "$ZIP_FILE" -d extracted
 
           shopt -s dotglob
 
-          # إذا كان داخل الملف المضغوط مجلد واحد فقط
-          COUNT=$(find extracted -mindepth 1 -maxdepth 1 -type d | wc -l)
+          ROOT_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
 
-          if [ "$COUNT" -eq 1 ] && [ -z "$(find extracted -mindepth 1 -maxdepth 1 -type f)" ]; then
-            ROOT=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
-            mv "$ROOT"/* .
-            mv "$ROOT"/.[!.]* . 2>/dev/null || true
+          if [ -n "$ROOT_DIR" ]; then
+            echo "Project folder: $ROOT_DIR"
+            cp -a "$ROOT_DIR"/. .
           else
-            mv extracted/* .
-            mv extracted/.[!.]* . 2>/dev/null || true
+            echo "Files are in ZIP root."
+            cp -a extracted/. .
           fi
 
           rm -rf extracted
           rm -f "$ZIP_FILE"
 
-      - name: Commit changes
+      - name: Commit and Push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add -A
 
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes detected."
             exit 0
           fi
 
-          git commit -m "Automatically extracted ZIP project"
+          git commit -m "Automatically extracted ZIP"
           git push
