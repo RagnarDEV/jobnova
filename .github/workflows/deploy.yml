@@ -1,4 +1,4 @@
-name: Extract and Push Project
+name: Ultimate Unzip and Deploy
 
 on:
   push:
@@ -7,44 +7,58 @@ on:
   workflow_dispatch:
 
 jobs:
-  unzip-and-push:
+  unzip-job:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - name: Absolute Unzip and Move
+    - name: Extract Files Safely
       run: |
-        # 1. البحث عن ملف الـ ZIP أينما كان وفكه
-        ZIP_FILE=$(find . -name "jobnova-v2.zip" | head -n 1)
+        # 1. البحث عن أي ملف ZIP مرفوع في المستودع
+        ZIP_FILE=$(find . -name "*.zip" | head -n 1)
         
-        if [ ! -z "$ZIP_FILE" ]; then
-          echo "تم العثور على الملف المضغوط: $ZIP_FILE"
-          unzip -o "$ZIP_FILE"
-          rm -f "$ZIP_FILE"
-          
-          # 2. حيلة النقل الشاملة: إذا فك الضغط ملفات داخل مجلد باسم jobnova
-          if [ -d "jobnova" ]; then
-            echo "نقل الملفات من المجلد المكرر إلى المجلد الرئيسي..."
-            # نقل كل شيء بما في ذلك الملفات المخفية
-            rsync -a jobnova/ ./
-            # حذف المجلد المكرر بعد النقل
-            rm -rf jobnova
-          fi
-          
-        else
-          echo "خطأ: لم يتم العثور على ملف jobnova-v2.zip في المستودع إطلاقاً!"
-          exit 1
+        if [ -z "$ZIP_FILE" ]; then
+          echo "لم يتم العثور على أي ملف مضغوط."
+          exit 0
         fi
+        
+        echo "تم العثور على الملف: $ZIP_FILE"
+        
+        # 2. إنشاء مجلد مؤقت لفك الضغط داخله
+        mkdir -p tmp_extracted
+        unzip -o "$ZIP_FILE" -d tmp_extracted
+        
+        # 3. حذف ملف الـ ZIP الأصلي فوراً لتنظيف المستودع
+        rm -f "$ZIP_FILE"
+        
+        # 4. البحث عن المجلد الفعلي الذي يحتوي على ملف wrangler.toml ونقل محتوياته للمجلد الرئيسي
+        TARGET_DIR=$(find tmp_extracted -name "wrangler.toml" -exec dirname {} \;)
+        
+        if [ ! -z "$TARGET_DIR" ]; then
+          echo "جاري نقل الملفات من المسار الافتراضي للهاتف: $TARGET_DIR"
+          rsync -av "$TARGET_DIR/" ./
+        else
+          echo "جاري نقل الملفات من المجلد المؤقت مباشرة..."
+          rsync -av tmp_extracted/ ./
+        fi
+        
+        # 5. تنظيف المجلدات المؤقتة وأي مجلدات مكررة قديمة
+        rm -rf tmp_extracted
+        rm -rf jobnova
+        rm -rf jobnova-v2
 
-    - name: Commit and Push Changes
+    - name: Push to Repository
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         
-        # إخبار جيت بمتابعة جميع التغييرات وحذف المجلد القديم من التتبع
+        # تنظيف التتبع وإضافة الملفات بشكل صحيح
+        git rm -r --cached . 2>/dev/null || true
         git add -A
         
-        git diff --quiet && git diff --staged --quiet || git commit -m "إصلاح نهائي: إخراج الملفات للمجلد الرئيسي وتنظيف المستودع"
-        git push
+        git diff --quiet && git diff --staged --quiet || git commit -m "تفريغ وترتيب ملفات المشروع بالكامل في المجلد الرئيسي"
+        git push origin main
