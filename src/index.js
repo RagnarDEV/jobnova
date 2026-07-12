@@ -717,11 +717,21 @@ function pastelForJob(job, idx) {
   if (idx % 7 === 3) return 'var(--pastel-pink)';
   return 'var(--surface)';
 }
+function timeAgoServer(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (h < 1) return 'just now';
+  if (h < 24) return h + 'h ago';
+  return d + 'd ago';
+}
 function jobCardSSR(job, idx) {
   const meta = CATEGORY_META[catForTitleServer(job.title)];
   const isNew = job.created_at && Date.now() - new Date(job.created_at).getTime() < 86400000;
   const isHot = job.salary && parseInt(job.salary.replace(/\D/g, '').slice(0, 3)) >= 150;
   const bg = pastelForJob(job, idx);
+  const timeAgo = timeAgoServer(job.created_at);
   return `<a href="/job/${job.id}" class="job-card" style="--cat-color:${meta.color};background:${bg};animation:fadeInUp .3s ease ${Math.min(idx, 6) * .04}s both">
     <div class="card-inner">
       <div class="card-row1">
@@ -750,6 +760,7 @@ function jobCardSSR(job, idx) {
         </div>
       </div>
     </div>
+    ${timeAgo ? '<div class="card-footer"><span>⏰ ' + timeAgo + '</span><span style="color:' + meta.color + '">View →</span></div>' : ''}
   </a>`;
 }
 
@@ -1247,11 +1258,7 @@ async function loadJobs(){
       return;
     }
     renderJobsList();
-    const tp=Math.ceil(total/20);
-    if(tp>1)document.getElementById('pagination').innerHTML=\`
-      <button class="page-btn" onclick="goPage(\${pg-1})" \${pg===1?'disabled':''}>← Prev</button>
-      <span class="page-info">Page \${pg} / \${tp}</span>
-      <button class="page-btn" onclick="goPage(\${pg+1})" \${pg===tp?'disabled':''}>Next →</button>\`;
+    renderPagination();
   }catch(e){
     document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">⚠️</div><h3>Failed to load</h3><p>Refresh and try again</p></div>\`;
   }
@@ -1335,9 +1342,22 @@ function filterCat(c,label){
 function debounceSearch(v){clearTimeout(srchT);srchT=setTimeout(()=>{srch=v;pg=1;loadJobs();},400);}
 function goPage(p){pg=p;loadJobs();window.scrollTo({top:0,behavior:'smooth'});}
 
-// bind actions on the server-rendered initial cards too
+function renderPagination(){
+  const el=document.getElementById('pagination');
+  if(!el)return;
+  const tp=Math.ceil(total/20);
+  el.innerHTML=tp>1?\`
+    <button class="page-btn" onclick="goPage(\${pg-1})" \${pg===1?'disabled':''}>← Prev</button>
+    <span class="page-info">Page \${pg} / \${tp}</span>
+    <button class="page-btn" onclick="goPage(\${pg+1})" \${pg===tp?'disabled':''}>Next →</button>\`:'';
+}
+
+// bind actions on the server-rendered initial cards too, and fill in
+// what only client JS can compute (relative time-ago is already SSR'd,
+// but pagination needs the live "total" count known only after render)
 document.addEventListener('DOMContentLoaded',()=>{
   savedIds.forEach(id=>{const b=document.getElementById('sb-'+id);if(b)b.classList.add('saved');});
+  renderPagination();
 });
 </script>
 </body>
