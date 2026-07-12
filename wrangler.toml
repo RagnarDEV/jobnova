@@ -13,4 +13,4 @@ database_id = "58e366ac-f5d4-4da5-b23f-0aa2e4208866"
 
 # ── Scheduled sync: runs syncJobs() automatically every hour ──
 [triggers]
-crons = ["0 * * * *"]
+crons = ["0 */8 * * *"]
