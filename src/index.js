@@ -1090,4 +1090,758 @@ function logoHtml(co,sz='46px'){
   const fs=Math.round(parseInt(sz)*.32)+'px';
   return \`<div class="co-logo" style="width:\${sz};height:\${sz}">
     <img src="https://www.google.com/s2/favicons?domain=\${domain}&sz=64" alt="\${co}"
-      style="width:100%
+      style="width:100%;height:100%;object-fit:contain;padding:6px;display:block"
+      onerror="this.onerror=null;this.src='https://icons.duckduckgo.com/ip3/\${domain}.ico';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex'}">
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:\${fs};font-weight:800;color:#3556FF">\${ini}</span>
+  </div>\`;
+}
+function remoteTag(t){
+  if(!t)return'';
+  const m={fully_remote:['tag-remote','🌐 Remote'],hybrid:['tag-hybrid','🏢 Hybrid'],on_site:['tag-onsite','📍 On-site'],onsite:['tag-onsite','📍 On-site']};
+  const[cls,lbl]=m[t]||['tag-onsite',t.replace(/_/g,' ')];
+  return\`<span class="tag \${cls}">\${lbl}</span>\`;
+}
+function catForTitle(title){
+  const t=(title||'').toLowerCase();
+  const order=['developer','designer','marketing','data','devops','manager','writer'];
+  for(const k of order){if(t.includes(k))return k;}
+  return 'developer';
+}
+function pastelFor(j,idx){
+  if(isHot(j.salary))return'var(--pastel-yellow)';
+  if(isNew(j.created_at))return'var(--pastel-blue)';
+  if(idx%7===3)return'var(--pastel-pink)';
+  return'var(--surface)';
+}
+function isNew(ts){if(!ts)return false;return Date.now()-new Date(ts).getTime()<86400000;}
+function isHot(sal){if(!sal)return false;return parseInt(sal.replace(/\\D/g,'').slice(0,3))>=150;}
+function getTimeAgo(date){
+  const diff=Date.now()-date.getTime();
+  const h=Math.floor(diff/3600000);
+  const d=Math.floor(diff/86400000);
+  if(h<1)return'just now';
+  if(h<24)return h+'h ago';
+  return d+'d ago';
+}
+
+let toastTimer;
+function showToast(msg,type='success'){
+  const el=document.getElementById('toast');
+  const icon=document.getElementById('toastIcon');
+  const bar=document.getElementById('toastBar');
+  document.getElementById('toastMsg').textContent=msg;
+  icon.textContent=type==='success'?'✓':'ℹ';
+  icon.style.color=type==='success'?'#0FAE79':'#3556FF';
+  el.className='toast show';
+  if(bar){bar.style.animation='none';bar.offsetHeight;bar.style.animation='toast-bar 3s linear forwards';}
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),3100);
+}
+
+const VIEWS=['vJobs','vSaved','vAlerts'];
+function showView(id){
+  VIEWS.forEach(v=>{const el=document.getElementById(v);if(el)el.style.display=v===id?'block':'none';});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function goView(v){
+  if(v==='jobs'){showView('vJobs');return;}
+  if(v==='saved'){showView('vSaved');renderSaved();return;}
+  if(v==='alerts'){showView('vAlerts');return;}
+}
+window.goView=goView;
+
+function toggleAdv(){document.getElementById('advFilters').classList.toggle('open');document.getElementById('advToggleBtn').classList.toggle('active');}
+function applyAdvFilters(){
+  adv.remote=document.getElementById('fRemote').value;
+  adv.employ=document.getElementById('fEmploy').value;
+  adv.seniority=document.getElementById('fSeniority').value;
+  adv.salaryMin=document.getElementById('fSalaryMin').value;
+  adv.days=document.getElementById('fDate').value;
+  pg=1;loadJobs();
+}
+function debounceAdv(){clearTimeout(advT);advT=setTimeout(applyAdvFilters,500);}
+function clearAdvFilters(){
+  ['fRemote','fEmploy','fSeniority','fDate'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fSalaryMin').value='';
+  adv={remote:'',employ:'',seniority:'',salaryMin:'',days:''};
+  pg=1;loadJobs();
+}
+
+function renderSkeletons(){
+  return Array(4).fill(0).map(()=>\`
+    <div class="job-card" style="pointer-events:none">
+      <div class="card-inner">
+        <div class="card-row1">
+          <div class="skel" style="width:46px;height:46px;border-radius:10px;flex-shrink:0"></div>
+          <div class="card-body">
+            <div class="skel" style="height:12px;width:55%;margin-bottom:8px;border-radius:5px"></div>
+            <div class="skel" style="height:16px;width:80%;margin-bottom:8px;border-radius:5px"></div>
+            <div class="skel" style="height:11px;width:40%;border-radius:5px"></div>
+          </div>
+        </div>
+      </div>
+    </div>\`).join('');
+}
+
+function renderJobsList(){
+  document.getElementById('jobsList').innerHTML=jobs.map((j,idx)=>{
+    const saved=savedIds.includes(j.id);
+    const nw=isNew(j.created_at);
+    const hot=isHot(j.salary);
+    const timeAgo=j.created_at?getTimeAgo(new Date(j.created_at)):'';
+    const k=catForTitle(j.title);
+    const meta=CAT_META[k];
+    const bg=pastelFor(j,idx);
+    return\`<a href="/job/\${j.id}" class="job-card" style="--cat-color:\${meta.color};background:\${bg};animation:fadeInUp .3s ease \${Math.min(idx,6)*.04}s both">
+      <div class="card-inner">
+        <div class="card-row1">
+          \${logoHtml(j.company)}
+          <div class="card-body">
+            <div class="card-badges">
+              <span class="cat-dot"><span class="dot"></span>\${meta.emoji} \${meta.label}</span>
+              \${nw?'<span class="tag-new">✦ NEW</span>':''}
+              \${hot?'<span class="tag-hot">🔥 HOT</span>':''}
+            </div>
+            <div class="job-title-card">\${j.title}</div>
+            <div class="job-co-card">\${j.company} <span class="verified-ico">✅</span></div>
+            <div class="job-meta-row">
+              \${j.location?'<span class="tag tag-loc">📍 '+j.location+'</span>':''}
+              \${remoteTag(j.remote_type)}
+              \${j.employment_type?'<span class="tag tag-type">'+j.employment_type.replace(/_/g,' ')+'</span>':''}
+              \${j.seniority?'<span class="tag tag-type">'+j.seniority+'</span>':''}
+            </div>
+          </div>
+        </div>
+        <div class="card-right">
+          \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':'<div></div>'}
+          <div class="card-actions">
+            <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">🔖</button>
+            <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">🔗</button>
+            <div class="arr-btn">→</div>
+          </div>
+        </div>
+      </div>
+      \${timeAgo?'<div class="card-footer"><span>⏰ '+timeAgo+'</span><span style="color:var(--cat-color)">View →</span></div>':''}
+    </a>\`;
+  }).join('');
+}
+
+async function loadJobs(){
+  document.getElementById('jobsList').innerHTML=renderSkeletons();
+  document.getElementById('pagination').innerHTML='';
+  const p=new URLSearchParams({page:pg});
+  if(cat)p.set('category',cat);
+  if(srch)p.set('search',srch);
+  if(adv.remote)p.set('remote_type',adv.remote);
+  if(adv.employ)p.set('employment_type',adv.employ);
+  if(adv.seniority)p.set('seniority',adv.seniority);
+  if(adv.salaryMin)p.set('salary_min',adv.salaryMin);
+  if(adv.days)p.set('days',adv.days);
+  try{
+    const res=await fetch('/api/jobs?'+p);
+    const data=await res.json();
+    jobs=data.jobs||[];total=data.total||0;
+    document.getElementById('resultsCount').innerHTML=\`<strong>\${total.toLocaleString()}</strong> jobs found\${cat?' in <strong>'+(CAT_META[cat]?CAT_META[cat].label:cat)+'</strong>':''}\${srch?' for "<strong>'+srch+'</strong>"':''}\`;
+    if(!jobs.length){
+      document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">🔍</div><h3>No jobs found</h3><p>Try different keywords or clear filters</p></div>\`;
+      return;
+    }
+    renderJobsList();
+    const tp=Math.ceil(total/20);
+    if(tp>1)document.getElementById('pagination').innerHTML=\`
+      <button class="page-btn" onclick="goPage(\${pg-1})" \${pg===1?'disabled':''}>← Prev</button>
+      <span class="page-info">Page \${pg} / \${tp}</span>
+      <button class="page-btn" onclick="goPage(\${pg+1})" \${pg===tp?'disabled':''}>Next →</button>\`;
+  }catch(e){
+    document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">⚠️</div><h3>Failed to load</h3><p>Refresh and try again</p></div>\`;
+  }
+}
+
+function toggleSave(id){
+  const idx=savedIds.indexOf(id);
+  if(idx>=0){savedIds.splice(idx,1);showToast('Removed from saved','info');}
+  else{savedIds.push(id);showToast('Job saved! 🔖');}
+  localStorage.setItem('jn_saved',JSON.stringify(savedIds));
+  const btn=document.getElementById('sb-'+id);
+  if(btn)btn.classList.toggle('saved',savedIds.includes(id));
+}
+window.toggleSave=toggleSave;
+function shareJob(id){
+  const url=window.location.origin+'/job/'+id;
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied! 🔗')).catch(()=>showToast('Copied!'));
+}
+window.shareJob=shareJob;
+
+function renderSaved(){
+  if(!savedIds.length){
+    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">🔖</div><h3>No saved jobs yet</h3><p>Tap the bookmark icon to save jobs</p></div>\`;
+    return;
+  }
+  const saved=jobs.filter(j=>savedIds.includes(j.id));
+  if(!saved.length){
+    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">🔖</div><h3>Browse jobs and save the ones you like</h3></div>\`;
+    return;
+  }
+  document.getElementById('savedList').innerHTML=saved.map(j=>\`
+    <a href="/job/\${j.id}" class="job-card">
+      <div class="card-inner">
+        <div class="card-row1">
+          \${logoHtml(j.company)}
+          <div class="card-body">
+            <div class="job-title-card">\${j.title}</div>
+            <div class="job-co-card">\${j.company}</div>
+            <div class="job-meta-row">\${remoteTag(j.remote_type)}</div>
+          </div>
+        </div>
+        <div class="card-right">
+          \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':'<div></div>'}
+          <button class="act-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">🔖</button>
+        </div>
+      </div>
+    </a>\`).join('');
+}
+
+function clearAllSaved(){savedIds=[];localStorage.removeItem('jn_saved');renderSaved();showToast('All cleared','info');}
+
+function addKeyword(e){
+  if(e.key!=='Enter')return;
+  const inp=document.getElementById('alertKwInput');
+  const val=inp.value.trim();if(!val)return;
+  if(!alertKws.includes(val)){alertKws.push(val);renderKws();}
+  inp.value='';
+}
+function removeKw(kw){alertKws=alertKws.filter(k=>k!==kw);renderKws();}
+function renderKws(){
+  document.getElementById('kwWrap').innerHTML=alertKws.map(k=>\`<span class="kw-chip">\${k}<button onclick="removeKw('\${k}')">×</button></span>\`).join('');
+}
+async function submitAlert(){
+  const email=document.getElementById('alertEmail').value.trim();
+  if(!email||!email.includes('@')){showToast('Please enter a valid email','info');return;}
+  if(!alertKws.length){showToast('Add at least one keyword','info');return;}
+  try{
+    const res=await fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,keywords:alertKws})});
+    const d=await res.json();
+    if(d.success){showToast('Subscribed! 🎉');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
+    else showToast(d.error||'Something went wrong','info');
+  }catch(e){showToast('Failed. Try again.','info');}
+}
+
+function filterCat(c,label){
+  cat=c;pg=1;
+  document.querySelectorAll('.chip').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.chip').forEach(el=>{if(el.dataset.cat===c||(c===''&&!el.dataset.cat))el.classList.add('active');});
+  showView('vJobs');loadJobs();
+}
+function debounceSearch(v){clearTimeout(srchT);srchT=setTimeout(()=>{srch=v;pg=1;loadJobs();},400);}
+function goPage(p){pg=p;loadJobs();window.scrollTo({top:0,behavior:'smooth'});}
+
+// bind actions on the server-rendered initial cards too
+document.addEventListener('DOMContentLoaded',()=>{
+  savedIds.forEach(id=>{const b=document.getElementById('sb-'+id);if(b)b.classList.add('saved');});
+});
+</script>
+</body>
+</html>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ══════════════════════════════════════════════════════════════════
+
+function renderAdminLogin(error) {
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — JobNova</title><meta name="robots" content="noindex, nofollow">${ICON_HEAD}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${SHARED_CSS}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg)}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:36px 30px;max-width:380px;width:100%;box-shadow:var(--shadow-lg)}
+.logo{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:800;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.logo img{width:28px;height:28px;border-radius:8px}
+.sub{font-size:13px;color:var(--ink3);margin-bottom:24px}
+.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border2);border-radius:10px;padding:12px 14px;color:var(--ink);font-size:14px;font-family:inherit;outline:none;margin-bottom:14px}
+.form-input:focus{border-color:var(--brand)}
+.submit-btn{width:100%;background:var(--brand);color:#fff;padding:13px;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;border:none;cursor:pointer}
+.err{background:rgba(255,92,122,.1);border:1px solid rgba(255,92,122,.25);color:var(--coral);font-size:13px;padding:10px 12px;border-radius:9px;margin-bottom:14px}
+</style></head><body>
+<div class="box">
+  <div class="logo"><img src="/favicon.svg" alt="JobNova">JobNova</div>
+  <div class="sub">Admin Dashboard</div>
+  ${error ? `<div class="err">Incorrect password. Try again.</div>` : ''}
+  <form method="POST" action="/admin/login">
+    <input class="form-input" type="password" name="password" placeholder="Admin password" autofocus required>
+    <button class="submit-btn" type="submit">Sign In →</button>
+  </form>
+</div>
+</body></html>`;
+}
+
+function barChart(rows) {
+  const max = Math.max(1, ...rows.map(r => r.count));
+  return rows.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+      <span style="width:76px;flex-shrink:0;font-size:11px;color:var(--ink3);font-weight:600">${r.label}</span>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;height:16px;overflow:hidden">
+        <div style="width:${Math.round((r.count / max) * 100)}%;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:6px"></div>
+      </div>
+      <span style="width:42px;text-align:right;flex-shrink:0;font-size:12px;font-weight:700;color:var(--ink)">${r.count}</span>
+    </div>`).join('');
+}
+
+async function renderAdminDashboard(env, base) {
+  await ensureTable(env);
+  const q = (sql, ...params) => env.DB.prepare(sql).bind(...params).all();
+
+  const [{ results: totalJobsR }, { results: jobsTodayR }, { results: jobsWeekR }, { results: subsR }] = await Promise.all([
+    q("SELECT COUNT(*) c FROM jobs"),
+    q("SELECT COUNT(*) c FROM jobs WHERE created_at >= datetime('now','-1 day')"),
+    q("SELECT COUNT(*) c FROM jobs WHERE created_at >= datetime('now','-7 day')"),
+    q("SELECT COUNT(*) c FROM subscribers"),
+  ]);
+
+  const [{ results: totalVisitsR }, { results: visitsTodayR }, { results: visits7dR }, { results: uniqCountriesR }] = await Promise.all([
+    q("SELECT COUNT(*) c FROM visits"),
+    q("SELECT COUNT(*) c FROM visits WHERE created_at >= datetime('now','-1 day')"),
+    q("SELECT COUNT(*) c FROM visits WHERE created_at >= datetime('now','-7 day')"),
+    q("SELECT COUNT(DISTINCT country) c FROM visits WHERE created_at >= datetime('now','-7 day')"),
+  ]);
+
+  const { results: pendingR } = await q("SELECT COUNT(*) c FROM job_postings WHERE status='pending'");
+
+  const { results: dailyVisits } = await q(
+    "SELECT date(created_at) d, COUNT(*) c FROM visits WHERE created_at >= datetime('now','-14 day') GROUP BY d ORDER BY d ASC"
+  );
+  const dailyMap = Object.fromEntries((dailyVisits || []).map(r => [r.d, r.c]));
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().split('T')[0];
+    days.push({ label: d.slice(5), count: dailyMap[d] || 0 });
+  }
+  const maxDaily = Math.max(1, ...days.map(d => d.count));
+
+  const { results: topPages } = await q(
+    "SELECT path, COUNT(*) c FROM visits WHERE created_at >= datetime('now','-7 day') GROUP BY path ORDER BY c DESC LIMIT 8"
+  );
+  const { results: topCountries } = await q(
+    "SELECT country, COUNT(*) c FROM visits WHERE created_at >= datetime('now','-7 day') GROUP BY country ORDER BY c DESC LIMIT 8"
+  );
+
+  const catCounts = await Promise.all(CATEGORY_ORDER.map(async k => {
+    const { results } = await q("SELECT COUNT(*) c FROM jobs WHERE LOWER(title) LIKE ?", `%${k}%`);
+    return { label: CATEGORY_META[k].label, count: results[0]?.c || 0 };
+  }));
+
+  const { results: syncLogs } = await q("SELECT * FROM sync_logs ORDER BY id DESC LIMIT 10");
+  const { results: apiSources } = await q("SELECT * FROM api_sources ORDER BY id DESC");
+  const { results: pendingPostings } = await q("SELECT * FROM job_postings WHERE status='pending' ORDER BY id DESC LIMIT 20");
+
+  const kpi = (label, val, sub, color = 'var(--brand)') => `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">${label}</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:${color}">${val}</div>
+      ${sub ? `<div style="font-size:11px;color:var(--ink3);margin-top:4px">${sub}</div>` : ''}
+    </div>`;
+
+  const content = `
+  <div class="adm-wrap">
+    <div class="adm-hdr">
+      <div>
+        <div class="adm-title">📊 Dashboard</div>
+        <div class="adm-sub">Live overview of JobNova performance</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <form method="POST" action="/api/sync" onsubmit="return confirm('Run job sync now?')" style="display:inline">
+          <button class="adm-btn adm-btn-primary" type="submit">↻ Sync Jobs Now</button>
+        </form>
+        <a href="/admin/logout" class="adm-btn">Logout</a>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      ${kpi('Total Jobs', (totalJobsR[0]?.c || 0).toLocaleString(), `+${jobsTodayR[0]?.c || 0} today · +${jobsWeekR[0]?.c || 0} this week`)}
+      ${kpi('Pending Postings', (pendingR[0]?.c || 0).toLocaleString(), 'Awaiting review', 'var(--coral)')}
+      ${kpi('Subscribers', (subsR[0]?.c || 0).toLocaleString(), 'Job alert emails', 'var(--pink)')}
+      ${kpi('Total Visits', (totalVisitsR[0]?.c || 0).toLocaleString(), `${visitsTodayR[0]?.c || 0} today`, 'var(--cyan)')}
+      ${kpi('Visits (7d)', (visits7dR[0]?.c || 0).toLocaleString(), `${uniqCountriesR[0]?.c || 0} countries reached`, 'var(--green)')}
+    </div>
+
+    ${(pendingPostings || []).length ? `
+    <div class="adm-card" style="margin-bottom:16px">
+      <div class="adm-card-title">📮 Pending Job Postings <span style="font-weight:400;color:var(--ink3);font-size:12px">— submitted via "Post a Job"</span></div>
+      ${pendingPostings.map(p => `<div class="pp-row">
+        <div class="pp-info">
+          <div class="pp-title">${p.title} <span style="color:var(--ink3);font-weight:500">at ${p.company}</span></div>
+          <div class="pp-meta">${p.email} · ${p.location || 'Remote'} · ${p.salary || 'No salary listed'} · ${new Date(p.created_at).toLocaleString()}</div>
+          <a href="${p.url}" target="_blank" style="font-size:11px;color:var(--brand)">${p.url}</a>
+        </div>
+        <div class="pp-actions">
+          <form method="POST" action="/admin/postings/approve"><input type="hidden" name="id" value="${p.id}"><button class="adm-btn-sm adm-btn-approve" type="submit">✓ Approve</button></form>
+          <form method="POST" action="/admin/postings/reject"><input type="hidden" name="id" value="${p.id}"><button class="adm-btn-sm" type="submit" onclick="return confirm('Reject this posting?')">✕ Reject</button></form>
+        </div>
+      </div>`).join('')}
+    </div>` : ''}
+
+    <div class="adm-grid">
+      <div class="adm-card" style="grid-column:span 2">
+        <div class="adm-card-title">Visitor Traffic — Last 14 Days</div>
+        <div style="display:flex;align-items:flex-end;gap:5px;height:140px;padding-top:10px">
+          ${days.map(d => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;background:linear-gradient(180deg,var(--brand),var(--brand2));border-radius:5px 5px 0 0;height:${Math.max(4, Math.round((d.count / maxDaily) * 110))}px" title="${d.label}: ${d.count}"></div>
+            <span style="font-size:9px;color:var(--ink3)">${d.label}</span>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Jobs by Category</div>
+        ${barChart(catCounts)}
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Top Pages (7d)</div>
+        ${(topPages || []).length ? (topPages.map(p => `<div class="adm-row"><span class="adm-row-label">${p.path}</span><span class="adm-row-val">${p.c}</span></div>`).join('')) : '<div class="adm-empty">No traffic yet</div>'}
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Top Countries (7d)</div>
+        ${(topCountries || []).length ? (topCountries.map(c => `<div class="adm-row"><span class="adm-row-label">${c.country}</span><span class="adm-row-val">${c.c}</span></div>`).join('')) : '<div class="adm-empty">No traffic yet</div>'}
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Recent Sync History</div>
+        ${(syncLogs || []).length ? syncLogs.map(s => `<div class="adm-row" style="align-items:flex-start">
+          <span class="adm-row-label" style="font-size:11px">${new Date(s.created_at).toLocaleString()}</span>
+          <span class="adm-row-val" style="color:var(--green)">+${s.inserted}<span style="color:var(--ink3);font-weight:500"> / ${s.skipped} skip</span></span>
+        </div>`).join('') : '<div class="adm-empty">No sync runs yet</div>'}
+      </div>
+    </div>
+
+    <div class="adm-card" style="margin-top:16px">
+      <div class="adm-card-title">API Sources <span style="font-weight:400;color:var(--ink3);font-size:12px">— add keys without redeploying</span></div>
+      <form method="POST" action="/admin/api-sources" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input class="adm-input" name="label" placeholder="Label (e.g. Primary)" required>
+        <input class="adm-input" name="api_key" placeholder="API Key" required style="flex:1;min-width:200px">
+        <button class="adm-btn adm-btn-primary" type="submit">+ Add Source</button>
+      </form>
+      ${(apiSources || []).length ? apiSources.map(s => `<div class="adm-row">
+        <span class="adm-row-label">${s.label} <span style="color:var(--ink3);font-weight:400">····${(s.api_key || '').slice(-4)}</span> ${s.active ? '<span style="color:var(--green);font-size:10px;font-weight:700">● ACTIVE</span>' : '<span style="color:var(--ink3);font-size:10px">○ off</span>'}</span>
+        <form method="POST" action="/admin/api-sources/delete" style="display:inline">
+          <input type="hidden" name="id" value="${s.id}">
+          <button class="adm-btn-sm" type="submit" onclick="return confirm('Remove this key?')">Remove</button>
+        </form>
+      </div>`).join('') : '<div class="adm-empty">No extra keys added — using default API_KEY secret.</div>'}
+    </div>
+  </div>`;
+
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — JobNova</title><meta name="robots" content="noindex, nofollow">${ICON_HEAD}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>${SHARED_CSS}
+body{background:var(--bg)}
+.adm-wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+.adm-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px}
+.adm-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--ink)}
+.adm-sub{font-size:13px;color:var(--ink3)}
+.adm-btn{padding:9px 16px;border-radius:9px;border:1px solid var(--border2);background:var(--surface);color:var(--ink2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.adm-btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.adm-btn-sm{padding:6px 12px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--coral);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.adm-btn-approve{color:var(--green);border-color:rgba(15,174,121,.3)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
+.adm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.adm-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+.adm-card-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:14px}
+.adm-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)}
+.adm-row:last-child{border-bottom:none}
+.adm-row-label{font-size:12px;color:var(--ink2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%}
+.adm-row-val{font-size:12px;font-weight:700;color:var(--ink)}
+.adm-empty{font-size:12px;color:var(--ink3);padding:8px 0}
+.adm-input{background:var(--surface2);border:1.5px solid var(--border2);border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+.adm-input:focus{border-color:var(--brand)}
+.pp-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.pp-row:last-child{border-bottom:none}
+.pp-title{font-size:13px;font-weight:700;color:var(--ink)}
+.pp-meta{font-size:11px;color:var(--ink3);margin:3px 0}
+.pp-actions{display:flex;gap:8px;flex-shrink:0}
+@media(max-width:768px){.adm-grid{grid-template-columns:1fr}}
+</style></head><body>${content}</body></html>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// FETCH HANDLER
+// ══════════════════════════════════════════════════════════════════
+
+function manifestJson(base) {
+  return JSON.stringify({
+    name: "JobNova — Remote Jobs",
+    short_name: "JobNova",
+    description: "Curated remote job board updated hourly.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#F6F7FB",
+    theme_color: "#3556FF",
+    icons: [
+      { src: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+    ]
+  });
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const base = `${url.protocol}//${url.host}`;
+    await ensureTable(env);
+
+    // ── static brand assets (no network dependency) ──
+    if (url.pathname === '/favicon.svg') {
+      return new Response(FAVICON_SVG, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/favicon.ico') {
+      return new Response(b64ToBytes(FAVICON_ICO_B64), { headers: { "Content-Type": "image/x-icon", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/favicon-32.png') {
+      return new Response(b64ToBytes(FAVICON_32_B64), { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/favicon-16.png') {
+      return new Response(b64ToBytes(FAVICON_16_B64), { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/apple-touch-icon.png') {
+      return new Response(b64ToBytes(APPLE_TOUCH_B64), { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/icon-512.png') {
+      return new Response(b64ToBytes(ICON512_B64), { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800" } });
+    }
+    if (url.pathname === '/manifest.json') {
+      return new Response(manifestJson(base), { headers: { "Content-Type": "application/manifest+json", "Cache-Control": "public, max-age=86400" } });
+    }
+    if (url.pathname === '/robots.txt') {
+      const robots = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml`;
+      return new Response(robots, { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400" } });
+    }
+
+    // ── visitor analytics (best-effort, non-blocking) ──
+    const trackable = ['GET'].includes(request.method) &&
+      !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/admin') &&
+      !['/sitemap.xml', '/feed.rss', '/robots.txt', '/manifest.json', '/favicon.svg', '/favicon.ico', '/favicon-32.png', '/favicon-16.png', '/apple-touch-icon.png', '/icon-512.png'].includes(url.pathname);
+    if (trackable && ctx?.waitUntil) ctx.waitUntil(recordVisit(env, request, url));
+
+    // ── sitemap ──
+    if (url.pathname === '/sitemap.xml') {
+      const { results } = await env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
+      const urls = [
+        `<url><loc>${base}/</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>`,
+        `<url><loc>${base}/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+        `<url><loc>${base}/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+        `<url><loc>${base}/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+        `<url><loc>${base}/disclaimer</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>`,
+        ...BLOG_POSTS.map(p => `<url><loc>${base}/blog/${p.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`),
+        ...results.map(j => `<url><loc>${base}/job/${j.id}</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>${new Date(j.created_at || Date.now()).toISOString().split('T')[0]}</lastmod></url>`)
+      ].join('');
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+        { headers: { "Content-Type": "application/xml", "Cache-Control": "public, max-age=3600" } }
+      );
+    }
+
+    if (url.pathname === '/feed.rss') {
+      const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC LIMIT 50").all();
+      const items = results.map(j => `<item>
+        <title><![CDATA[${j.title} at ${j.company}]]></title>
+        <link>${base}/job/${j.id}</link>
+        <guid>${base}/job/${j.id}</guid>
+        <description><![CDATA[${j.company} — ${j.location || 'Remote'}${j.salary ? ' — ' + j.salary : ''}]]></description>
+        <pubDate>${new Date(j.created_at || Date.now()).toUTCString()}</pubDate>
+      </item>`).join('');
+      return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel><title>JobNova — Remote Jobs</title><link>${base}</link>
+<description>Latest remote job listings from JobNova</description>
+<atom:link href="${base}/feed.rss" rel="self" type="application/rss+xml"/>
+${items}</channel></rss>`, { headers: { "Content-Type": "application/rss+xml" } });
+    }
+
+    // ── ADMIN ──
+    if (url.pathname === '/admin/login' && request.method === 'POST') {
+      const form = await request.formData();
+      const pw = form.get('password') || '';
+      if (env.ADMIN_PASSWORD && pw === env.ADMIN_PASSWORD) {
+        const cookie = await makeAdminCookie(env);
+        return new Response(null, { status: 302, headers: { 'Location': '/admin', 'Set-Cookie': `jn_admin=${cookie}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400` } });
+      }
+      return new Response(renderAdminLogin(true), { status: 401, headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+    if (url.pathname === '/admin/logout') {
+      return new Response(null, { status: 302, headers: { 'Location': '/admin', 'Set-Cookie': 'jn_admin=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0' } });
+    }
+    if (url.pathname === '/admin/api-sources' && request.method === 'POST') {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const label = (form.get('label') || 'Source').toString().slice(0, 60);
+      const apiKey = (form.get('api_key') || '').toString().slice(0, 200);
+      if (apiKey) await env.DB.prepare("INSERT INTO api_sources (label, api_key, active) VALUES (?,?,1)").bind(label, apiKey).run();
+      return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+    }
+    if (url.pathname === '/admin/api-sources/delete' && request.method === 'POST') {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      if (id) await env.DB.prepare("DELETE FROM api_sources WHERE id = ?").bind(id).run();
+      return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+    }
+    if (url.pathname === '/admin/postings/approve' && request.method === 'POST') {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      if (id) {
+        const { results } = await env.DB.prepare("SELECT * FROM job_postings WHERE id = ?").bind(id).all();
+        const p = results[0];
+        if (p) {
+          try {
+            await env.DB.prepare(
+              `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+            ).bind(p.title, p.company, p.location || 'Remote', p.url, p.description || '', p.salary || '', p.remote_type || 'fully_remote', '[]', '', p.employment_type || 'full_time', '').run();
+            await env.DB.prepare("UPDATE job_postings SET status='approved' WHERE id = ?").bind(id).run();
+          } catch (e) {}
+        }
+      }
+      return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+    }
+    if (url.pathname === '/admin/postings/reject' && request.method === 'POST') {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      if (id) await env.DB.prepare("UPDATE job_postings SET status='rejected' WHERE id = ?").bind(id).run();
+      return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+    }
+    if (url.pathname === '/admin') {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response(renderAdminLogin(false), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      const html = await renderAdminDashboard(env, base);
+      return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    // ── job page ──
+    const jobMatch = url.pathname.match(/^\/job\/(\d+)$/);
+    if (jobMatch) {
+      const { results } = await env.DB.prepare("SELECT * FROM jobs WHERE id = ?").bind(jobMatch[1]).all();
+      if (!results.length) return new Response('Job not found', { status: 404 });
+      let job = results[0];
+      if ((!job.description || job.description.length < 20) && job.job_handle) {
+        try {
+          const keys = await getActiveApiKeys(env);
+          const r = await fetch(`https://api.jobdatalake.com/v1/jobs/${job.job_handle}`, { headers: { "X-API-Key": keys[0] || '' } });
+          if (r.ok) {
+            const d = await r.json();
+            const desc = d.description || d.summary || "";
+            if (desc && desc.length > 20) {
+              await env.DB.prepare("UPDATE jobs SET description = ? WHERE id = ?").bind(desc, job.id).run();
+              job = { ...job, description: desc };
+            }
+          }
+        } catch (e) {}
+      }
+      const { results: related } = await env.DB.prepare("SELECT id,title,company,salary,remote_type FROM jobs WHERE id != ? ORDER BY RANDOM() LIMIT 4").bind(jobMatch[1]).all();
+      return new Response(renderJobPage(job, related, base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    if (url.pathname === '/blog') return new Response(renderBlogIndex(base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+
+    const blogMatch = url.pathname.match(/^\/blog\/(\d+)$/);
+    if (blogMatch) {
+      const post = BLOG_POSTS.find(p => p.id === parseInt(blogMatch[1]));
+      if (!post) return new Response('Not found', { status: 404 });
+      return new Response(renderArticlePage(post, base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    if (url.pathname === '/privacy') return new Response(renderStaticPage('privacy', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    if (url.pathname === '/terms') return new Response(renderStaticPage('terms', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    if (url.pathname === '/disclaimer') return new Response(renderStaticPage('disclaimer', base), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+
+    if (url.pathname === '/api/subscribe' && request.method === 'POST') {
+      try {
+        const { email, keywords } = await request.json();
+        if (!email || !keywords?.length) return new Response(JSON.stringify({ success: false, error: "Required" }), { headers: { "Content-Type": "application/json" } });
+        await env.DB.prepare("INSERT OR REPLACE INTO subscribers (email,keywords) VALUES (?,?)").bind(email, JSON.stringify(keywords)).run();
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      } catch (e) { return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json" } }); }
+    }
+
+    if (url.pathname === '/api/post-job' && request.method === 'POST') {
+      try {
+        const b = await request.json();
+        const title = (b.title || '').toString().slice(0, 150);
+        const company = (b.company || '').toString().slice(0, 100);
+        const email = (b.email || '').toString().slice(0, 150);
+        const jobUrl = (b.url || '').toString().slice(0, 400);
+        if (!title || !company || !email || !jobUrl) {
+          return new Response(JSON.stringify({ success: false, error: "Please fill in all required fields." }), { headers: { "Content-Type": "application/json" } });
+        }
+        await env.DB.prepare(
+          `INSERT INTO job_postings (title,company,email,url,location,category,employment_type,remote_type,salary,description,status)
+           VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`
+        ).bind(
+          title, company, email, jobUrl,
+          (b.location || '').toString().slice(0, 100),
+          (b.category || '').toString().slice(0, 40),
+          (b.employment_type || 'full_time').toString().slice(0, 40),
+          (b.remote_type || 'fully_remote').toString().slice(0, 40),
+          (b.salary || '').toString().slice(0, 60),
+          (b.description || '').toString().slice(0, 4000)
+        ).run();
+        return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json" } });
+      } catch (e) { return new Response(JSON.stringify({ success: false, error: "Something went wrong. Please try again." }), { status: 500, headers: { "Content-Type": "application/json" } }); }
+    }
+
+    if (url.pathname === '/api/jobs') {
+      const page = parseInt(url.searchParams.get("page") || "1");
+      const limit = 20, offset = (page - 1) * limit;
+      const category = url.searchParams.get("category") || "";
+      const search = url.searchParams.get("search") || "";
+      const remoteType = url.searchParams.get("remote_type") || "";
+      const employType = url.searchParams.get("employment_type") || "";
+      const seniority = url.searchParams.get("seniority") || "";
+      const salaryMin = url.searchParams.get("salary_min") || "";
+      const days = url.searchParams.get("days") || "";
+      const conditions = [], params = [];
+      if (category) { conditions.push("LOWER(title) LIKE ?"); params.push(`%${category}%`); }
+      if (search) { conditions.push("(LOWER(title) LIKE ? OR LOWER(company) LIKE ?)"); params.push(`%${search.toLowerCase()}%`, `%${search.toLowerCase()}%`); }
+      if (remoteType) { conditions.push("remote_type = ?"); params.push(remoteType); }
+      if (employType) { conditions.push("employment_type = ?"); params.push(employType); }
+      if (seniority) { conditions.push("LOWER(seniority) LIKE ?"); params.push(`%${seniority.toLowerCase()}%`); }
+      if (salaryMin) { conditions.push("CAST(REPLACE(REPLACE(salary,'$',''),'k','') AS INTEGER) >= ?"); params.push(parseInt(salaryMin)); }
+      if (days) { conditions.push("created_at >= datetime('now', '-' || ? || ' days')"); params.push(parseInt(days)); }
+      const where = conditions.length ? " WHERE " + conditions.join(" AND ") : "";
+      const { results } = await env.DB.prepare(`SELECT * FROM jobs${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`).bind(...params).all();
+      const { results: cr } = await env.DB.prepare(`SELECT COUNT(*) as total FROM jobs${where}`).bind(...params).all();
+      return new Response(JSON.stringify({ jobs: results, total: cr[0]?.total || 0, page }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+    }
+
+    if (url.pathname === '/api/sync') {
+      try {
+        const result = await syncJobs(env);
+        if (request.method === 'POST') return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+        return new Response(JSON.stringify({ success: true, ...result }), { headers: { "Content-Type": "application/json" } });
+      } catch (e) { return new Response(JSON.stringify({ success: false, error: e.message }), { status: 500, headers: { "Content-Type": "application/json" } }); }
+    }
+
+    if (url.pathname === '/api/debug') {
+      const { results } = await env.DB.prepare("SELECT COUNT(*) as count FROM jobs").all();
+      return new Response(JSON.stringify({ jobs_in_db: results[0]?.count || 0 }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    if (url.pathname === '/') {
+      const html = await renderMainHTML(env, base);
+      return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
+    return new Response('Not found', { status: 404 });
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncJobs(env));
+  }
+};
