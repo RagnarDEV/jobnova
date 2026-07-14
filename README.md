@@ -1,5 +1,5 @@
 # JobNova — Cloudflare Worker (Remote Job Board)
-
+.......... 
 ## هيكل المشروع (احترافي، مفصول بالكامل، قابل للتوسع)
 
 ```
