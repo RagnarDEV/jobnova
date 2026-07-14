@@ -1,4 +1,4 @@
-name: Extract ZIP and Move Folders to src
+name: Extract ZIP into src
 
 on:
   push:
@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract ZIP and Move Folders
+      - name: Extract ZIP into src
         shell: bash
         run: |
           set -e
@@ -29,39 +29,25 @@ jobs:
             exit 0
           fi
 
-          echo "Found ZIP: $ZIP_FILE"
+          echo "ZIP: $ZIP_FILE"
 
-          mkdir extracted
-          unzip -o "$ZIP_FILE" -d extracted
+          rm -rf src
+          mkdir -p src
+
+          unzip -o "$ZIP_FILE" -d src
 
           shopt -s dotglob
 
-          ROOT_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          ROOT_DIR=$(find src -mindepth 1 -maxdepth 1 -type d | head -n 1)
 
           if [ -n "$ROOT_DIR" ]; then
-            cp -a "$ROOT_DIR"/. .
-          else
-            cp -a extracted/. .
+            cp -a "$ROOT_DIR"/. src/
+            rm -rf "$ROOT_DIR"
           fi
 
-          rm -rf extracted
           rm -f "$ZIP_FILE"
 
-          # حذف ملفات GitHub Actions القادمة من المشروع
           rm -rf .github/workflows
-
-          # إنشاء مجلد src إذا لم يكن موجوداً
-          mkdir -p src
-
-          # نقل جميع المجلدات إلى src
-          for dir in */; do
-            dir="${dir%/}"
-
-            if [[ "$dir" != "src" && "$dir" != ".git" && "$dir" != ".github" ]]; then
-              echo "Moving $dir to src/"
-              mv "$dir" src/
-            fi
-          done
 
       - name: Commit and Push
         shell: bash
@@ -72,10 +58,10 @@ jobs:
           git add -A
 
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes detected."
             exit 0
           fi
 
-          git commit -m "Extract ZIP and move folders to src"
+          git commit -m "Extract ZIP into src"
 
           git push origin HEAD:main
