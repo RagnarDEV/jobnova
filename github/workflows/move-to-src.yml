@@ -1,0 +1,81 @@
+name: Extract ZIP and Move Folders to src
+
+on:
+  push:
+    paths:
+      - "**.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract ZIP and Move Folders
+        shell: bash
+        run: |
+          set -e
+
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "No ZIP file found."
+            exit 0
+          fi
+
+          echo "Found ZIP: $ZIP_FILE"
+
+          mkdir extracted
+          unzip -o "$ZIP_FILE" -d extracted
+
+          shopt -s dotglob
+
+          ROOT_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+
+          if [ -n "$ROOT_DIR" ]; then
+            cp -a "$ROOT_DIR"/. .
+          else
+            cp -a extracted/. .
+          fi
+
+          rm -rf extracted
+          rm -f "$ZIP_FILE"
+
+          # حذف ملفات GitHub Actions القادمة من المشروع
+          rm -rf .github/workflows
+
+          # إنشاء مجلد src إذا لم يكن موجوداً
+          mkdir -p src
+
+          # نقل جميع المجلدات إلى src
+          for dir in */; do
+            dir="${dir%/}"
+
+            if [[ "$dir" != "src" && "$dir" != ".git" && "$dir" != ".github" ]]; then
+              echo "Moving $dir to src/"
+              mv "$dir" src/
+            fi
+          done
+
+      - name: Commit and Push
+        shell: bash
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Extract ZIP and move folders to src"
+
+          git push origin HEAD:main
