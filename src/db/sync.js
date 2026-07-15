@@ -14,7 +14,7 @@ export async function getActiveApiKeys(env) {
 
 export async function syncJobs(env) {
   await ensureTable(env);
-  const queries = ["developer", "designer", "marketing", "data", "devops", "writer", "manager"];
+  const queries = ["developer", "designer", "marketing", "data", "devops", "writer", "sales", "customer support", "product manager", "finance", "recruiter", "qa engineer", "manager"];
   const keys = await getActiveApiKeys(env);
   let inserted = 0, skipped = 0, errors = [];
   if (!keys.length) {
