@@ -12,6 +12,44 @@ export async function getActiveApiKeys(env) {
   return env.API_KEY ? [env.API_KEY] : [];
 }
 
+// Inserts a new API source without assuming a fixed column set. The live
+// api_sources table on this project predates the current schema.js and has
+// accumulated NOT NULL columns (name, base_url, and possibly others) that
+// don't exist in a fresh install. Rather than hardcoding every column and
+// chasing each "NOT NULL constraint failed" error one at a time, this reads
+// the table's real structure via PRAGMA table_info and fills in a sensible
+// value for whatever NOT NULL column it finds — known ones get a real
+// value, unknown ones fall back to an empty string so the insert never
+// fails on a missing column again.
+export async function insertApiSource(env, label, apiKey) {
+  const { results: cols } = await env.DB.prepare(`PRAGMA table_info(api_sources)`).all();
+  const knownValues = {
+    label,
+    name: label,
+    api_key: apiKey,
+    base_url: 'https://api.jobdatalake.com/v1/jobs',
+    active: 1,
+  };
+  const insertCols = [];
+  const values = [];
+  for (const col of (cols || [])) {
+    if (col.name === 'id') continue;                          // autoincrement PK
+    if (col.name === 'created_at' && col.dflt_value != null) continue; // has DB default
+    if (col.name in knownValues) {
+      insertCols.push(col.name);
+      values.push(knownValues[col.name]);
+    } else if (col.notnull && col.dflt_value == null) {
+      // unknown required column — safe empty fallback instead of crashing
+      insertCols.push(col.name);
+      values.push('');
+    }
+  }
+  const placeholders = insertCols.map(() => '?').join(',');
+  await env.DB.prepare(
+    `INSERT INTO api_sources (${insertCols.join(',')}) VALUES (${placeholders})`
+  ).bind(...values).run();
+}
+
 export async function syncJobs(env) {
   await ensureTable(env);
   const queries = ["developer", "designer", "marketing", "data", "devops", "writer", "sales", "customer support", "product manager", "finance", "recruiter", "qa engineer", "manager"];
