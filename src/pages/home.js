@@ -327,8 +327,9 @@ ${postJobModalHtml()}
   <div class="toast-bar" id="toastBar"></div>
 </div>
 
+<script>window.__CATEGORY_META__=${JSON.stringify(CATEGORY_META)};</script>
 <script>
-const CAT_META={developer:{label:'Development',emoji:'💻',color:'#3556FF'},designer:{label:'Design',emoji:'🎨',color:'#D6489B'},marketing:{label:'Marketing',emoji:'📣',color:'#F5A623'},data:{label:'Data & AI',emoji:'📊',color:'#0EA5C4'},devops:{label:'DevOps',emoji:'⚙️',color:'#0FAE79'},manager:{label:'Management',emoji:'👔',color:'#FF5C7A'},writer:{label:'Writing',emoji:'✍️',color:'#7C3AED'}};
+const CAT_META=window.__CATEGORY_META__;
 let pg=1,cat='',srch='',advT,srchT;
 let jobs=${JSON.stringify(initialJobs)},total=${initialTotal};
 let savedIds=JSON.parse(localStorage.getItem('jn_saved')||'[]');
