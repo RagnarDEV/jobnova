@@ -69,6 +69,12 @@ export async function ensureTable(env) {
   await ensureColumn(env, 'api_sources', 'api_key', 'TEXT');
   await ensureColumn(env, 'api_sources', 'active', 'INTEGER DEFAULT 1');
   await ensureColumn(env, 'api_sources', 'created_at', 'DATETIME');
+  // Some earlier deployments created this table with a `name` column
+  // (NOT NULL, no default) instead of `label`. We can't drop a NOT NULL
+  // constraint in SQLite without recreating the table, so instead we keep
+  // `name` around and always write the same value into both columns —
+  // see the INSERT in admin.router.js.
+  await ensureColumn(env, 'api_sources', 'name', 'TEXT');
 
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS job_postings (
