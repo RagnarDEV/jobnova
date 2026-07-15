@@ -61,7 +61,10 @@ export async function handleAdminRoute(url, request, env, base) {
       const label = (form.get('label') || 'Source').toString().trim().slice(0, 60);
       const apiKey = (form.get('api_key') || '').toString().trim().slice(0, 200);
       if (apiKey) {
-        await env.DB.prepare("INSERT INTO api_sources (label, api_key, active) VALUES (?,?,1)").bind(label, apiKey).run();
+        // `name` is written alongside `label` for compatibility with older
+        // deployments where the table's original column was `name` with a
+        // NOT NULL constraint (see src/db/schema.js for details).
+        await env.DB.prepare("INSERT INTO api_sources (label, name, api_key, active) VALUES (?,?,?,1)").bind(label, label, apiKey).run();
       }
       return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
     } catch (e) { return errorPage(e); }
