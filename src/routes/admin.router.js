@@ -12,6 +12,7 @@
 
 import { makeAdminCookie, verifyAdminCookie } from '../auth/admin-auth.js';
 import { renderAdminLogin, renderAdminDashboard } from '../pages/admin.js';
+import { insertApiSource } from '../db/sync.js';
 
 function errorPage(err) {
   const msg = (err && err.message ? err.message : String(err)).replace(/</g, '&lt;');
@@ -61,10 +62,11 @@ export async function handleAdminRoute(url, request, env, base) {
       const label = (form.get('label') || 'Source').toString().trim().slice(0, 60);
       const apiKey = (form.get('api_key') || '').toString().trim().slice(0, 200);
       if (apiKey) {
-        // `name` is written alongside `label` for compatibility with older
-        // deployments where the table's original column was `name` with a
-        // NOT NULL constraint (see src/db/schema.js for details).
-        await env.DB.prepare("INSERT INTO api_sources (label, name, api_key, active) VALUES (?,?,?,1)").bind(label, label, apiKey).run();
+        // insertApiSource reads the table's real columns at runtime and
+        // fills any NOT NULL column it finds (name, base_url, or anything
+        // else left over from older versions of this table) instead of
+        // assuming a fixed set of columns — see src/db/sync.js.
+        await insertApiSource(env, label, apiKey);
       }
       return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
     } catch (e) { return errorPage(e); }
