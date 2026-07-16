@@ -12,6 +12,9 @@ import { PROVIDERS } from '../providers/index.js';
 const QUERIES = ["developer", "designer", "marketing", "data", "devops", "writer", "sales", "customer support", "product manager", "finance", "recruiter", "qa engineer", "manager"];
 const RETRIES = 2;
 const TIMEOUT_MS = 15000;
+const DELAY_BETWEEN_QUERIES_MS = 350; // spaces out consecutive calls to the same provider to avoid per-second rate limits (e.g. RapidAPI HTTP 429)
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ────────────────────────────────────────────────────────────────
 // Sources (api_sources table + the primary env.API_KEY secret)
@@ -86,9 +89,38 @@ async function withRetry(fn, retries) {
   throw lastErr;
 }
 
+// Groups repeated identical failures (e.g. the same HTTP 402/429 firing for
+// every one of the 13 search keywords) into a single counted line instead
+// of 13 near-identical rows. This is what was crowding out every other
+// provider's diagnostic info in the dashboard — one noisy provider could
+// fill the entire error list before a quieter provider's real error ever
+// got a turn.
+function createErrorLog() {
+  const counts = new Map();
+  return {
+    add(provider, message, sample) {
+      const key = `${provider}::${message}`;
+      const entry = counts.get(key) || { count: 0, sample };
+      entry.count++;
+      counts.set(key, entry);
+    },
+    toArray(limit = 30) {
+      return Array.from(counts.entries())
+        .slice(0, limit)
+        .map(([key, entry]) => {
+          const [provider, message] = key.split('::');
+          const sampleTxt = entry.sample ? ` (e.g. "${entry.sample}")` : '';
+          return entry.count > 1
+            ? `[${provider}] ${message}${sampleTxt} — ×${entry.count}`
+            : `[${provider}] ${message}${sampleTxt}`;
+        });
+    },
+  };
+}
+
 // Dedup key is the unique `url` column — INSERT OR IGNORE never creates
 // duplicates and never touches existing rows.
-async function saveJobs(env, jobs, counters, errors, providerId) {
+async function saveJobs(env, jobs, counters, errorLog, providerId) {
   for (const j of jobs) {
     if (!j || !j.url) { counters.skipped++; continue; }
     try {
@@ -102,7 +134,7 @@ async function saveJobs(env, jobs, counters, errors, providerId) {
       ).run();
       if (r.meta?.changes > 0) counters.inserted++; else counters.skipped++;
     } catch (e) {
-      errors.push(`[${providerId}] DB: ${e.message.slice(0, 60)}`);
+      errorLog.add(providerId, `DB: ${e.message.slice(0, 60)}`);
     }
   }
 }
@@ -115,7 +147,7 @@ export async function syncJobs(env) {
   await ensureTable(env);
   const sources = await getActiveSources(env);
   const counters = { inserted: 0, skipped: 0 };
-  const errors = [];
+  const errorLog = createErrorLog();
   const providerStats = [];
 
   if (!sources.length) {
@@ -126,7 +158,7 @@ export async function syncJobs(env) {
 
   for (const source of sources) {
     const provider = PROVIDERS[source.provider];
-    if (!provider) { errors.push(`Unknown provider "${source.provider}"`); continue; }
+    if (!provider) { errorLog.add(source.provider, 'Unknown provider'); continue; }
 
     const startedAt = Date.now();
     const startInserted = counters.inserted;
@@ -141,11 +173,12 @@ export async function syncJobs(env) {
           () => provider.fetchJobs({ apiKey: source.api_key, query: q, timeoutMs: TIMEOUT_MS }),
           RETRIES
         );
-        await saveJobs(env, jobs, counters, errors, source.provider);
+        await saveJobs(env, jobs, counters, errorLog, source.provider);
       } catch (e) {
-        errors.push(`[${source.provider}]${q ? ` "${q}":` : ''} ${e.message}`);
+        errorLog.add(source.provider, e.message, q || undefined);
         // one failed keyword/provider never stops the rest of the sync
       }
+      if (runQueries.length > 1) await sleep(DELAY_BETWEEN_QUERIES_MS);
     }
 
     providerStats.push({
@@ -156,7 +189,7 @@ export async function syncJobs(env) {
     });
   }
 
-  const result = { inserted: counters.inserted, skipped: counters.skipped, errors: errors.slice(0, 15), providerStats };
+  const result = { inserted: counters.inserted, skipped: counters.skipped, errors: errorLog.toArray(), providerStats };
   await logSync(env, result);
   return result;
 }
