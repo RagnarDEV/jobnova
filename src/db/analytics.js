@@ -2,11 +2,21 @@
 // Sync-run logging + best-effort visitor tracking (never blocks the response).
 
 export async function logSync(env, result) {
+  const errorsJson = JSON.stringify(result.errors || []);
+  const detailsJson = JSON.stringify(result.providerStats || []);
   try {
     await env.DB.prepare(
-      `INSERT INTO sync_logs (inserted, skipped, errors) VALUES (?,?,?)`
-    ).bind(result.inserted, result.skipped, JSON.stringify(result.errors || [])).run();
-  } catch (e) {}
+      `INSERT INTO sync_logs (inserted, skipped, errors, details) VALUES (?,?,?,?)`
+    ).bind(result.inserted, result.skipped, errorsJson, detailsJson).run();
+  } catch (e) {
+    // Fallback for a sync_logs table that predates the `details` column —
+    // still log the summary rather than losing the record entirely.
+    try {
+      await env.DB.prepare(
+        `INSERT INTO sync_logs (inserted, skipped, errors) VALUES (?,?,?)`
+      ).bind(result.inserted, result.skipped, errorsJson).run();
+    } catch (e2) {}
+  }
 }
 
 export async function recordVisit(env, request, url) {
@@ -19,4 +29,3 @@ export async function recordVisit(env, request, url) {
     ).bind(url.pathname, ref, country, ua).run();
   } catch (e) {}
 }
-
