@@ -51,6 +51,10 @@ export async function ensureTable(env) {
   // Per-provider breakdown (provider name, jobs inserted, duration) for
   // each sync run — added for the multi-provider architecture.
   await ensureColumn(env, 'sync_logs', 'details', 'TEXT');
+  // Some historical deployments of this table predate `created_at` (which
+  // is why timestamps showed as "Invalid Date" in the dashboard — the
+  // column simply wasn't there for SELECT * to return).
+  await ensureColumn(env, 'sync_logs', 'created_at', 'DATETIME');
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS visits (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
