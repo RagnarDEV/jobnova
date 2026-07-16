@@ -77,6 +77,16 @@ export async function insertApiSource(env, label, apiKey, provider = 'jobdatalak
 // Retry / dedupe / save
 // ────────────────────────────────────────────────────────────────
 
+// Retrying is only worth it for transient failures (network blips, HTTP
+// 5xx). A 402 (payment required) or 429 (rate limited) will not succeed on
+// immediate retry — retrying it just burns 2-3x the subrequest budget for
+// zero benefit, which is exactly what was starving other providers.
+function isRetryable(err) {
+  const match = err && typeof err.message === 'string' && err.message.match(/^HTTP (\d{3})/);
+  if (match) return parseInt(match[1], 10) >= 500;
+  return true; // network errors / timeouts are worth one retry
+}
+
 async function withRetry(fn, retries) {
   let lastErr;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -84,6 +94,7 @@ async function withRetry(fn, retries) {
       return await fn();
     } catch (e) {
       lastErr = e;
+      if (!isRetryable(e)) break;
     }
   }
   throw lastErr;
@@ -165,6 +176,15 @@ async function saveJobs(env, jobs, counters, errorLog, providerId) {
 export async function syncJobs(env) {
   await ensureTable(env);
   const sources = await getActiveSources(env);
+  // Run cheap, single-request providers (Arbeitnow, Greenhouse, Lever,
+  // Ashby — ignoresQuery=true) before the 13-keyword providers. Otherwise a
+  // provider that needs one subrequest could get starved of budget by
+  // providers ahead of it that need 13+ each.
+  sources.sort((a, b) => {
+    const aCheap = PROVIDERS[a.provider]?.ignoresQuery ? 0 : 1;
+    const bCheap = PROVIDERS[b.provider]?.ignoresQuery ? 0 : 1;
+    return aCheap - bCheap;
+  });
   const counters = { inserted: 0, skipped: 0 };
   const errorLog = createErrorLog();
   const providerStats = [];
@@ -185,8 +205,10 @@ export async function syncJobs(env) {
     // don't support keyword search — call once per sync instead of once
     // per keyword.
     const runQueries = provider.ignoresQuery ? [null] : QUERIES;
+    let providerBroken = false;
 
     for (const q of runQueries) {
+      if (providerBroken) break; // first failure already indicates an account/quota-level issue — trying the other 12 keywords would just waste subrequest budget other providers need
       try {
         const jobs = await withRetry(
           () => provider.fetchJobs({ apiKey: source.api_key, query: q, timeoutMs: TIMEOUT_MS }),
@@ -195,7 +217,7 @@ export async function syncJobs(env) {
         await saveJobs(env, jobs, counters, errorLog, source.provider);
       } catch (e) {
         errorLog.add(source.provider, e.message, q || undefined);
-        // one failed keyword/provider never stops the rest of the sync
+        providerBroken = true;
       }
       if (runQueries.length > 1) await sleep(DELAY_BETWEEN_QUERIES_MS);
     }
