@@ -5,11 +5,16 @@ import { ensureTable } from './schema.js';
 import { logSync } from './analytics.js';
 
 export async function getActiveApiKeys(env) {
+  // Union, not replace: env.API_KEY (the original working secret) must
+  // always be included, even when extra sources exist in api_sources.
+  // Previously, adding any row there silently dropped the primary key.
+  const keys = new Set();
+  if (env.API_KEY) keys.add(env.API_KEY);
   try {
     const { results } = await env.DB.prepare(`SELECT api_key FROM api_sources WHERE active = 1`).all();
-    if (results && results.length) return results.map(r => r.api_key).filter(Boolean);
+    (results || []).forEach(r => { if (r.api_key) keys.add(r.api_key); });
   } catch (e) {}
-  return env.API_KEY ? [env.API_KEY] : [];
+  return [...keys];
 }
 
 // Inserts a new API source without assuming a fixed column set. The live
