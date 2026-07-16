@@ -48,6 +48,9 @@ export async function ensureTable(env) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+  // Per-provider breakdown (provider name, jobs inserted, duration) for
+  // each sync run — added for the multi-provider architecture.
+  await ensureColumn(env, 'sync_logs', 'details', 'TEXT');
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS visits (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +78,11 @@ export async function ensureTable(env) {
   // `name` around and always write the same value into both columns —
   // see the INSERT in admin.router.js.
   await ensureColumn(env, 'api_sources', 'name', 'TEXT');
+  // `provider` tells syncJobs() which fetch/mapping logic to use for this
+  // key. Existing rows (created before this column existed) default to
+  // 'jobdatalake' — the original single-provider behavior — so nothing
+  // breaks for keys already in use.
+  await ensureColumn(env, 'api_sources', 'provider', "TEXT DEFAULT 'jobdatalake'");
 
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS job_postings (
