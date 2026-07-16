@@ -10,23 +10,30 @@ export const ignoresQuery = true;
 
 export async function fetchJobs({ timeoutMs = 15000, maxPages = 3 } = {}) {
   const all = [];
+  let lastError = null;
   for (let page = 1; page <= maxPages; page++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const res = await fetch(`https://arbeitnow.com/api/job-board-api?page=${page}`, { signal: controller.signal });
-      if (!res.ok) break;
+      if (!res.ok) { lastError = new Error(`HTTP ${res.status}`); break; }
       const data = await res.json();
       const jobs = data.data || [];
       if (!jobs.length) break;
       all.push(...jobs.map(map));
       if (!data.links || !data.links.next) break;
     } catch (e) {
+      lastError = e;
       break;
     } finally {
       clearTimeout(timer);
     }
   }
+  // Previously this swallowed the failure silently and returned an empty
+  // array, which is why the dashboard showed "+0 (0ms)" with no clue why.
+  // Now: only stay silent if we got at least SOME jobs before failing on a
+  // later page — if the very first attempt failed, surface the real error.
+  if (!all.length && lastError) throw lastError;
   return all.filter(j => j.url);
 }
 
