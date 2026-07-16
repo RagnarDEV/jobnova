@@ -61,12 +61,9 @@ export async function handleAdminRoute(url, request, env, base) {
       const form = await request.formData();
       const label = (form.get('label') || 'Source').toString().trim().slice(0, 60);
       const apiKey = (form.get('api_key') || '').toString().trim().slice(0, 200);
+      const provider = (form.get('provider') || 'jobdatalake').toString().trim().slice(0, 40);
       if (apiKey) {
-        // insertApiSource reads the table's real columns at runtime and
-        // fills any NOT NULL column it finds (name, base_url, or anything
-        // else left over from older versions of this table) instead of
-        // assuming a fixed set of columns — see src/db/sync.js.
-        await insertApiSource(env, label, apiKey);
+        await insertApiSource(env, label, apiKey, provider);
       }
       return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
     } catch (e) { return errorPage(e); }
