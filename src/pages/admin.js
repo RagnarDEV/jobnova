@@ -174,13 +174,24 @@ export async function renderAdminDashboard(env, base) {
 
     <div class="adm-card" style="margin-top:16px">
       <div class="adm-card-title">API Sources <span style="font-weight:400;color:var(--ink3);font-size:12px">— add keys without redeploying</span></div>
-      <form method="POST" action="/admin/api-sources" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <form method="POST" action="/admin/api-sources" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" onsubmit="return true">
         <input class="adm-input" name="label" placeholder="Label (e.g. Primary)" required>
-        <input class="adm-input" name="api_key" placeholder="API Key" required style="flex:1;min-width:200px">
+        <select class="adm-input" name="provider" id="providerSelect" onchange="document.getElementById('apiKeyInput').placeholder=this.options[this.selectedIndex].dataset.hint">
+          <option value="jobdatalake" data-hint="API Key">JobDataLake</option>
+          <option value="linkedin_rapidapi" data-hint="X-RapidAPI-Key">LinkedIn (RapidAPI)</option>
+          <option value="arbeitnow" data-hint="no key needed — leave any value">Arbeitnow (free)</option>
+          <option value="remotive" data-hint="no key needed — leave any value">Remotive (free)</option>
+          <option value="jsearch" data-hint="X-RapidAPI-Key">JSearch (RapidAPI)</option>
+          <option value="adzuna" data-hint="app_id:app_key">Adzuna</option>
+          <option value="greenhouse" data-hint="board token, e.g. airbnb">Greenhouse</option>
+          <option value="lever" data-hint="company slug, e.g. netflix">Lever</option>
+          <option value="ashby" data-hint="job board name">Ashby</option>
+        </select>
+        <input class="adm-input" id="apiKeyInput" name="api_key" placeholder="API Key" required style="flex:1;min-width:200px">
         <button class="adm-btn adm-btn-primary" type="submit">+ Add Source</button>
       </form>
       ${(apiSources || []).length ? apiSources.map(s => `<div class="adm-row">
-        <span class="adm-row-label">${s.label} <span style="color:var(--ink3);font-weight:400">····${(s.api_key || '').slice(-4)}</span> ${s.active ? '<span style="color:var(--green);font-size:10px;font-weight:700">● ACTIVE</span>' : '<span style="color:var(--ink3);font-size:10px">○ off</span>'}</span>
+        <span class="adm-row-label">${s.label} <span style="color:var(--accent2, #4F8EF7);font-size:10px;font-weight:700;text-transform:uppercase">${s.provider || 'jobdatalake'}</span> <span style="color:var(--ink3);font-weight:400">····${(s.api_key || '').slice(-4)}</span> ${s.active ? '<span style="color:var(--green);font-size:10px;font-weight:700">● ACTIVE</span>' : '<span style="color:var(--ink3);font-size:10px">○ off</span>'}</span>
         <form method="POST" action="/admin/api-sources/delete" style="display:inline">
           <input type="hidden" name="id" value="${s.id}">
           <button class="adm-btn-sm" type="submit" onclick="return confirm('Remove this key?')">Remove</button>
