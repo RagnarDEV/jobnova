@@ -180,7 +180,7 @@ export async function renderAdminDashboard(env, base) {
               ${details.map(d => `<span>${d.provider}: <b style="color:${d.inserted > 0 ? 'var(--green)' : 'var(--ink3)'}">+${d.inserted}</b> (${d.duration_ms}ms)</span>`).join('')}
             </div>` : ''}
             ${errs.length ? `<div style="font-size:10px;color:#e05a5a;background:#fdf0f0;padding:6px 8px;border-radius:6px;width:100%;box-sizing:border-box">
-              ${errs.slice(0, 3).map(e => `<div>⚠ ${String(e).replace(/</g, '&lt;')}</div>`).join('')}
+              ${errs.map(e => `<div>⚠ ${String(e).replace(/</g, '&lt;')}</div>`).join('')}
             </div>` : ''}
           </div>`;
         }).join('') : '<div class="adm-empty">No sync runs yet</div>'}
