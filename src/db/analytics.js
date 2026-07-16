@@ -6,14 +6,14 @@ export async function logSync(env, result) {
   const detailsJson = JSON.stringify(result.providerStats || []);
   try {
     await env.DB.prepare(
-      `INSERT INTO sync_logs (inserted, skipped, errors, details) VALUES (?,?,?,?)`
+      `INSERT INTO sync_logs (inserted, skipped, errors, details, created_at) VALUES (?,?,?,?, datetime('now'))`
     ).bind(result.inserted, result.skipped, errorsJson, detailsJson).run();
   } catch (e) {
     // Fallback for a sync_logs table that predates the `details` column —
     // still log the summary rather than losing the record entirely.
     try {
       await env.DB.prepare(
-        `INSERT INTO sync_logs (inserted, skipped, errors) VALUES (?,?,?)`
+        `INSERT INTO sync_logs (inserted, skipped, errors, created_at) VALUES (?,?,?, datetime('now'))`
       ).bind(result.inserted, result.skipped, errorsJson).run();
     } catch (e2) {}
   }
