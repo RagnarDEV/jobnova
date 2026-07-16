@@ -165,10 +165,25 @@ export async function renderAdminDashboard(env, base) {
       </div>
       <div class="adm-card">
         <div class="adm-card-title">Recent Sync History</div>
-        ${(syncLogs || []).length ? syncLogs.map(s => `<div class="adm-row" style="align-items:flex-start">
-          <span class="adm-row-label" style="font-size:11px">${new Date(s.created_at).toLocaleString()}</span>
-          <span class="adm-row-val" style="color:var(--green)">+${s.inserted}<span style="color:var(--ink3);font-weight:500"> / ${s.skipped} skip</span></span>
-        </div>`).join('') : '<div class="adm-empty">No sync runs yet</div>'}
+        ${(syncLogs || []).length ? syncLogs.map(s => {
+          let details = [];
+          let errs = [];
+          try { details = JSON.parse(s.details || '[]'); } catch (e) {}
+          try { errs = JSON.parse(s.errors || '[]'); } catch (e) {}
+          const when = s.created_at ? new Date(s.created_at).toLocaleString() : '—';
+          return `<div class="adm-row" style="align-items:flex-start;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;width:100%">
+              <span class="adm-row-label" style="font-size:11px">${when}</span>
+              <span class="adm-row-val" style="color:var(--green)">+${s.inserted}<span style="color:var(--ink3);font-weight:500"> / ${s.skipped} skip</span></span>
+            </div>
+            ${details.length ? `<div style="font-size:10px;color:var(--ink3);display:flex;flex-wrap:wrap;gap:8px">
+              ${details.map(d => `<span>${d.provider}: <b style="color:${d.inserted > 0 ? 'var(--green)' : 'var(--ink3)'}">+${d.inserted}</b> (${d.duration_ms}ms)</span>`).join('')}
+            </div>` : ''}
+            ${errs.length ? `<div style="font-size:10px;color:#e05a5a;background:#fdf0f0;padding:6px 8px;border-radius:6px;width:100%;box-sizing:border-box">
+              ${errs.slice(0, 3).map(e => `<div>⚠ ${String(e).replace(/</g, '&lt;')}</div>`).join('')}
+            </div>` : ''}
+          </div>`;
+        }).join('') : '<div class="adm-empty">No sync runs yet</div>'}
       </div>
     </div>
 
