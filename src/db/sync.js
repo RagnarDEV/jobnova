@@ -156,7 +156,7 @@ export async function syncJobs(env) {
     });
   }
 
-  const result = { inserted: counters.inserted, skipped: counters.skipped, errors: errors.slice(0, 8), providerStats };
+  const result = { inserted: counters.inserted, skipped: counters.skipped, errors: errors.slice(0, 15), providerStats };
   await logSync(env, result);
   return result;
 }
