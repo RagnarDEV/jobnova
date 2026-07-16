@@ -120,21 +120,40 @@ function createErrorLog() {
 
 // Dedup key is the unique `url` column — INSERT OR IGNORE never creates
 // duplicates and never touches existing rows.
+// Saves jobs in small batches via env.DB.batch() instead of one D1 call per
+// job. This matters a lot: Cloudflare Workers caps the total number of
+// subrequests (fetch calls + D1 queries combined) allowed within a single
+// Worker invocation. A provider returning 200+ jobs used to mean 200+
+// individual D1 round trips, which alone could blow through that limit
+// before other providers even got a turn — that's what was silently
+// starving arbeitnow/linkedin_rapidapi of subrequest budget. batch()
+// executes many statements as ONE subrequest.
+const DB_BATCH_SIZE = 25;
+
 async function saveJobs(env, jobs, counters, errorLog, providerId) {
-  for (const j of jobs) {
-    if (!j || !j.url) { counters.skipped++; continue; }
-    try {
-      const r = await env.DB.prepare(
+  const validJobs = (jobs || []).filter((j) => j && j.url);
+  counters.skipped += (jobs || []).length - validJobs.length;
+
+  for (let i = 0; i < validJobs.length; i += DB_BATCH_SIZE) {
+    const chunk = validJobs.slice(i, i + DB_BATCH_SIZE);
+    const stmts = chunk.map((j) =>
+      env.DB.prepare(
         `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`
       ).bind(
         j.title || 'Unknown', j.company || 'Company', j.location || '', j.url,
         j.description || '', j.salary || '', j.remote_type || '',
         JSON.stringify(j.skills || []), j.seniority || '', j.employment_type || '', j.job_handle || ''
-      ).run();
-      if (r.meta?.changes > 0) counters.inserted++; else counters.skipped++;
+      )
+    );
+    try {
+      const results = await env.DB.batch(stmts);
+      for (const r of results) {
+        if (r.meta?.changes > 0) counters.inserted++; else counters.skipped++;
+      }
     } catch (e) {
-      errorLog.add(providerId, `DB: ${e.message.slice(0, 60)}`);
+      errorLog.add(providerId, `DB batch: ${e.message.slice(0, 60)}`);
+      counters.skipped += chunk.length;
     }
   }
 }
