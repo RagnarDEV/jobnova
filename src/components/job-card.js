@@ -4,25 +4,26 @@
 // (SSR full card + compact directory-page row).
 
 import { CATEGORY_META, CATEGORY_ORDER } from '../config/constants.js';
-import { slugify } from '../lib/entities.js';
+import { slugify, escapeHtml } from '../lib/entities.js';
 
 export function logoImgHtml(company, size = '64px', cls = 'job-logo') {
+  const safeCompany = escapeHtml(company);
   const slug = (company || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const domain = slug + '.com';
   const ini = (company || '?').split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
   const fs = Math.round(parseInt(size) * .34) + 'px';
   return `<div class="${cls}" style="width:${size};height:${size}">
-    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="${company}"
+    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" alt="${safeCompany}"
       style="width:100%;height:100%;object-fit:contain;padding:7px"
       onerror="this.onerror=null;this.src='https://icons.duckduckgo.com/ip3/${domain}.ico';this.onerror=function(){this.style.display='none';this.nextElementSibling.style.display='flex'}">
-    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${fs};font-weight:800;color:var(--brand)">${ini}</span>
+    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:${fs};font-weight:800;color:var(--brand)">${escapeHtml(ini)}</span>
   </div>`;
 }
 
 export function remoteTagHtml(t) {
   if (!t) return '';
   const m = { fully_remote: ['tag-remote', '🌐 Remote'], hybrid: ['tag-hybrid', '🏢 Hybrid'], on_site: ['tag-onsite', '📍 On-site'], onsite: ['tag-onsite', '📍 On-site'] };
-  const [cls, lbl] = m[t] || ['tag-onsite', t.replace(/_/g, ' ')];
+  const [cls, lbl] = m[t] || ['tag-onsite', escapeHtml(t.replace(/_/g, ' '))];
   return `<span class="tag ${cls}">${lbl}</span>`;
 }
 
@@ -31,10 +32,10 @@ export function jobRowMini(job) {
   return `<a href="/job/${job.id}" class="related-card">
     ${logoImgHtml(job.company, '38px', 'related-logo')}
     <div class="related-info">
-      <div class="related-jt">${job.title}</div>
-      <div class="related-co">${job.company} · <a href="/companies/${slugify(job.company)}" style="color:var(--ink3)" onclick="event.stopPropagation()">view company →</a></div>
+      <div class="related-jt">${escapeHtml(job.title)}</div>
+      <div class="related-co">${escapeHtml(job.company)} · <a href="/companies/${slugify(job.company)}" style="color:var(--ink3)" onclick="event.stopPropagation()">view company →</a></div>
     </div>
-    ${job.salary ? `<div class="related-sal">${job.salary}</div>` : ''}
+    ${job.salary ? `<div class="related-sal">${escapeHtml(job.salary)}</div>` : ''}
     <span style="color:var(--ink3)">›</span>
   </a>`;
 }
@@ -43,7 +44,7 @@ export function directoryGridHtml(items, hrefBase) {
   if (!items.length) return `<div class="empty"><div class="e-icon">📭</div><h3>No entries yet</h3><p>Check back after the next sync.</p></div>`;
   return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
     ${items.map(it => `<a href="${hrefBase}/${it.slug}" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-decoration:none;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--brand)'" onmouseout="this.style.borderColor='var(--border)'">
-      <span style="font-size:14px;font-weight:700;color:var(--ink)">${it.name}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--ink)">${escapeHtml(it.name)}</span>
       <span style="font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-soft);padding:3px 9px;border-radius:20px">${it.count}</span>
     </a>`).join('')}
   </div>`;
@@ -88,17 +89,17 @@ export function jobCardSSR(job, idx) {
             ${isNew ? '<span class="tag-new">✦ NEW</span>' : ''}
             ${isHot ? '<span class="tag-hot">🔥 HOT</span>' : ''}
           </div>
-          <div class="job-title-card">${job.title}</div>
-          <div class="job-co-card">${job.company} <span class="verified-ico" title="Verified">✅</span></div>
+          <div class="job-title-card">${escapeHtml(job.title)}</div>
+          <div class="job-co-card">${escapeHtml(job.company)} <span class="verified-ico" title="Verified">✅</span></div>
           <div class="job-meta-row">
-            ${job.location ? '<span class="tag tag-loc">📍 ' + job.location + '</span>' : ''}
+            ${job.location ? '<span class="tag tag-loc">📍 ' + escapeHtml(job.location) + '</span>' : ''}
             ${remoteTagHtml(job.remote_type)}
-            ${job.employment_type ? '<span class="tag tag-type">' + job.employment_type.replace(/_/g, ' ') + '</span>' : ''}
+            ${job.employment_type ? '<span class="tag tag-type">' + escapeHtml(job.employment_type.replace(/_/g, ' ')) + '</span>' : ''}
           </div>
         </div>
       </div>
       <div class="card-right">
-        ${job.salary ? '<div class="salary-badge">' + job.salary + '</div>' : '<div></div>'}
+        ${job.salary ? '<div class="salary-badge">' + escapeHtml(job.salary) + '</div>' : '<div></div>'}
         <div class="card-actions">
           <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();toggleSave(${job.id})" id="sb-${job.id}">🔖</button>
           <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(${job.id})">🔗</button>
