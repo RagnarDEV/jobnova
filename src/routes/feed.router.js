@@ -8,8 +8,14 @@ import { CATEGORY_ORDER } from '../config/constants.js';
 
 export async function handleFeedRoute(url, env, base) {
   if (url.pathname === '/sitemap.xml') {
-    const xml = await buildSitemapXml(env, base, { blogPosts: BLOG_POSTS, categoryOrder: CATEGORY_ORDER });
-    return new Response(xml, { headers: { "Content-Type": "application/xml", "Cache-Control": "public, max-age=3600" } });
+    let xml = await buildSitemapXml(env, base, { blogPosts: BLOG_POSTS, categoryOrder: CATEGORY_ORDER });
+    // Defensive: some SEO validators reject the XML declaration unless it
+    // is the literal first character of the response body. A stray BOM or
+    // whitespace character (easy to pick up invisibly through copy/paste
+    // across many edits) breaks that even when the source looks clean —
+    // strip it here so the served bytes are guaranteed correct regardless.
+    xml = xml.replace(/^\uFEFF/, '').trimStart();
+    return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
   }
 
   if (url.pathname === '/feed.rss') {
