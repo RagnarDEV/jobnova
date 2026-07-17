@@ -9,20 +9,29 @@ import { postJobModalHtml } from '../components/post-job-modal.js';
 import { SHARED_CSS } from '../styles/shared-css.js';
 import { ICON_HEAD } from '../assets/favicon.js';
 import { BASE_URL } from '../config/constants.js';
+import { escapeHtml } from '../lib/entities.js';
 
+// SECURITY: title/description ultimately trace back to externally-sourced
+// content on many pages (job titles/companies scraped from LinkedIn,
+// JobDataLake, or visitor-submitted postings). Escaping once here, at the
+// single shared template every page passes through, protects every caller
+// — including any future page that forgets to sanitize before calling
+// baseLayout() — instead of relying on each page to remember individually.
 export function baseLayout(title, description, canonical, ogImage, content, extraHead = '', robots = 'index, follow') {
+  const safeTitle = escapeHtml(title);
+  const safeDescription = escapeHtml(description);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${title}</title>
-<meta name="description" content="${description}">
+<title>${safeTitle}</title>
+<meta name="description" content="${safeDescription}">
 <meta name="robots" content="${robots}">
 ${ICON_HEAD}
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${description}">
+<meta property="og:title" content="${safeTitle}">
+<meta property="og:description" content="${safeDescription}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${canonical}">
 <meta property="og:site_name" content="JobNova">
