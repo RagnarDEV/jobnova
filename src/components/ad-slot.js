@@ -17,12 +17,38 @@
 //   'blog-index-top'         — src/pages/blog.js, above the article grid
 //   'blog-article-footer'    — src/pages/blog.js, after each article body
 
+// Banner 300×250 (Adsterra key: 0c69243f088d16d1621497a5a9091047) — used for
+// every slot except the one explicitly reserved at 320×50.
+const BANNER_300x250 = `<script>
+atOptions = {
+  'key' : '0c69243f088d16d1621497a5a9091047',
+  'format' : 'iframe',
+  'height' : 250,
+  'width' : 300,
+  'params' : {}
+};
+</script>
+<script src="https://www.highperformanceformat.com/0c69243f088d16d1621497a5a9091047/invoke.js"></script>`;
+
+// Banner 320×50 (Adsterra key: a741ce3155049c468de74c92a5f8a23e) — the
+// mobile-friendly size reserved specifically for job-detail-inline.
+const BANNER_320x50 = `<script>
+atOptions = {
+  'key' : 'a741ce3155049c468de74c92a5f8a23e',
+  'format' : 'iframe',
+  'height' : 50,
+  'width' : 320,
+  'params' : {}
+};
+</script>
+<script src="https://www.highperformanceformat.com/a741ce3155049c468de74c92a5f8a23e/invoke.js"></script>`;
+
 const ADS = {
-  'homepage-results-top': '',
-  'job-detail-inline': '',
-  'job-detail-footer': '',
-  'blog-index-top': '',
-  'blog-article-footer': '',
+  'homepage-results-top': BANNER_300x250,
+  'job-detail-inline': BANNER_320x50,
+  'job-detail-footer': BANNER_300x250,
+  'blog-index-top': BANNER_300x250,
+  'blog-article-footer': BANNER_300x250,
 };
 
 export function adSlot(id, style = '') {
