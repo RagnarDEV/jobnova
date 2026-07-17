@@ -3,8 +3,16 @@
 import { logoImgHtml, remoteTagHtml, catForTitleServer } from '../components/job-card.js';
 import { CATEGORY_META } from '../config/constants.js';
 import { baseLayout } from '../layout/base-layout.js';
-import { slugify } from '../lib/entities.js';
-import { adSlot } from '../components/ad-slot.js';
+import { slugify, escapeHtml } from '../lib/entities.js';
+
+// SECURITY: JSON.stringify() does NOT escape "<", so a malicious job title
+// like `</script><script>...` embedded in scraped/submitted data could
+// break out of the JSON-LD <script> block and inject a real executable
+// script tag. Escaping "<" as a unicode sequence keeps the JSON value
+// identical while making that break-out impossible.
+function safeJsonLd(obj) {
+  return JSON.stringify(obj).replace(/</g, '\\u003c');
+}
 
 export function renderJobPage(job, related, base) {
   let skills = [];
@@ -15,7 +23,7 @@ export function renderJobPage(job, related, base) {
   const desc = job.description && job.description.length > 20
     ? job.description.slice(0, 160).replace(/\n/g, ' ') + '...'
     : `${job.title} at ${job.company}. ${job.location || 'Remote'}${job.salary ? ' — ' + job.salary : ''}. Apply on JobNova.`;
-  const schema = JSON.stringify({
+  const schema = safeJsonLd({
     "@context": "https://schema.org", "@type": "JobPosting",
     "title": job.title, "description": job.description || desc,
     "hiringOrganization": { "@type": "Organization", "name": job.company },
@@ -26,7 +34,7 @@ export function renderJobPage(job, related, base) {
     "url": canonical, "directApply": true,
     ...(job.salary ? { "baseSalary": { "@type": "MonetaryAmount", "currency": "USD", "value": { "@type": "QuantitativeValue", "value": job.salary } } } : {})
   });
-  const breadcrumbSchema = JSON.stringify({
+  const breadcrumbSchema = safeJsonLd({
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "JobNova", "item": base },
@@ -36,30 +44,30 @@ export function renderJobPage(job, related, base) {
   });
   const content = `
 <div class="page">
-  <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><a href="/">Jobs</a><span>›</span><span>${job.title}</span></div>
+  <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><a href="/">Jobs</a><span>›</span><span>${escapeHtml(job.title)}</span></div>
   <div class="job-hero">
     <div class="job-hero-hdr">
       <div class="job-co-row">
         ${logoImgHtml(job.company, '64px', 'job-logo')}
-        <div><div class="job-co-name"><a href="/companies/${slugify(job.company)}" style="color:inherit">${job.company}</a> <span class="verified-ico" title="Verified listing">✅</span></div><div class="job-co-loc">📍 ${job.location || 'Remote'}</div></div>
+        <div><div class="job-co-name"><a href="/companies/${slugify(job.company)}" style="color:inherit">${escapeHtml(job.company)}</a> <span class="verified-ico" title="Verified listing">✅</span></div><div class="job-co-loc">📍 ${escapeHtml(job.location || 'Remote')}</div></div>
       </div>
-      <h1 class="job-title-h1">${job.title}</h1>
+      <h1 class="job-title-h1">${escapeHtml(job.title)}</h1>
       <div class="job-chips">
         ${remoteTagHtml(job.remote_type)}
         <a href="/categories/${catForTitleServer(job.title)}" class="tag tag-type" style="text-decoration:none">${CATEGORY_META[catForTitleServer(job.title)].emoji} ${CATEGORY_META[catForTitleServer(job.title)].label}</a>
-        ${job.employment_type ? `<span class="tag tag-type">${job.employment_type.replace(/_/g, ' ')}</span>` : ''}
-        ${job.seniority ? `<span class="tag tag-type">${job.seniority}</span>` : ''}
+        ${job.employment_type ? `<span class="tag tag-type">${escapeHtml(job.employment_type.replace(/_/g, ' '))}</span>` : ''}
+        ${job.seniority ? `<span class="tag tag-type">${escapeHtml(job.seniority)}</span>` : ''}
         ${isNew ? '<span class="tag tag-new">✦ NEW</span>' : ''}
         ${isHot ? '<span class="tag tag-hot">🔥 HOT</span>' : ''}
       </div>
-      ${job.salary ? `<div class="job-salary-lg">💰 ${job.salary}</div>` : ''}
+      ${job.salary ? `<div class="job-salary-lg">💰 ${escapeHtml(job.salary)}</div>` : ''}
     </div>
     <div class="job-body">
-      ${skills.length ? `<div class="sec-label">Required Skills</div><div class="skills-wrap">${skills.map(s => `<a href="/skills/${slugify(s)}" class="skill-tag" style="text-decoration:none">${s}</a>`).join('')}</div>` : ''}
+      ${skills.length ? `<div class="sec-label">Required Skills</div><div class="skills-wrap">${skills.map(s => `<a href="/skills/${slugify(s)}" class="skill-tag" style="text-decoration:none">${escapeHtml(s)}</a>`).join('')}</div>` : ''}
       <div class="sec-label">About the Role</div>
-      <div class="desc-wrap">${job.description && job.description.length > 20 ? job.description : 'Full description available on the company website.'}</div>
-      ${adSlot('job-detail-inline')}
-      <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="apply-big">Apply Now →</a>
+      <div class="desc-wrap">${job.description && job.description.length > 20 ? escapeHtml(job.description) : 'Full description available on the company website.'}</div>
+      <div class="ad-slot"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved 320×50 space — insert your ad network snippet here</div><!-- AD SLOT: job-detail-inline — paste your ad network embed code in this container --></div>
+      <a href="${escapeHtml(job.url)}" target="_blank" rel="noopener noreferrer" class="apply-big">Apply Now →</a>
     </div>
   </div>
   ${related.length ? `
@@ -68,12 +76,12 @@ export function renderJobPage(job, related, base) {
       ${related.map(r => `
         <a href="/job/${r.id}" class="related-card">
           ${logoImgHtml(r.company, '38px', 'related-logo')}
-          <div class="related-info"><div class="related-jt">${r.title}</div><div class="related-co"><a href="/companies/${slugify(r.company)}" style="color:inherit">${r.company}</a></div></div>
-          ${r.salary ? `<div class="related-sal">${r.salary}</div>` : ''}
+          <div class="related-info"><div class="related-jt">${escapeHtml(r.title)}</div><div class="related-co"><a href="/companies/${slugify(r.company)}" style="color:inherit">${escapeHtml(r.company)}</a></div></div>
+          ${r.salary ? `<div class="related-sal">${escapeHtml(r.salary)}</div>` : ''}
           <span style="color:var(--ink3)">›</span>
         </a>`).join('')}
     </div>` : ''}
-  ${adSlot('job-detail-footer', 'margin-top:24px')}
+  <div class="ad-slot" style="margin-top:24px"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved space — insert your ad network snippet here</div><!-- AD SLOT: job-detail-footer — paste your ad network embed code in this container --></div>
 </div>`;
   return baseLayout(`${job.title} at ${job.company} — JobNova`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`);
 }
