@@ -10,6 +10,7 @@ import { SHARED_CSS } from '../styles/shared-css.js';
 import { ICON_HEAD } from '../assets/favicon.js';
 import { FEATURED_COMPANIES, CATEGORY_ORDER, CATEGORY_META } from '../config/constants.js';
 import { jobCardSSR } from '../components/job-card.js';
+import { adSlot } from '../components/ad-slot.js';
 
 export function categoryChipsServer() {
   return CATEGORY_ORDER.map(k => `<button class="chip" data-cat="${k}" onclick="filterCat('${k}','${CATEGORY_META[k].label}')">${CATEGORY_META[k].emoji} ${CATEGORY_META[k].label}</button>`).join('');
@@ -45,7 +46,6 @@ export async function renderMainHTML(env, base) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="google-site-verification" content="ovQTMqz34HlwSIbfa62zJniqCs-JA4ZAN3HQ6rvNU7Q" />
 <meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobNova — Find Your Next Remote Job</title>
@@ -200,6 +200,7 @@ ${SHARED_CSS}
 .ad-slot{border:1.5px dashed var(--border2);border-radius:12px;padding:14px;text-align:center;margin:16px 0;background:var(--surface2)}
 .ad-slot-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
 .ad-slot-hint{font-size:11px;color:var(--ink3)}
+.ad-slot-live{border:none;padding:0;background:transparent;display:flex;justify-content:center;overflow:hidden}
 
 @media(max-width:860px){
   .filters-bar{top:60px}
@@ -280,7 +281,7 @@ ${mobileHeaderHtml()}
         <div class="results-count" id="resultsCount"><strong>${initialTotal.toLocaleString()}</strong> jobs found</div>
         <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
       </div>
-      <div class="ad-slot"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved space above listings — insert your ad network snippet here</div><!-- AD SLOT: homepage-results-top --></div>
+      ${adSlot('homepage-results-top')}
       <div class="jobs-list" id="jobsList">${ssrJobsHtml}</div>
       <div class="pagination" id="pagination"></div>
     </div>
