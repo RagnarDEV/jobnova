@@ -2,6 +2,7 @@
 
 import { baseLayout } from '../layout/base-layout.js';
 import { BLOG_POSTS } from '../data/blog-posts.js';
+import { adSlot } from '../components/ad-slot.js';
 
 export function renderBlogIndex(base) {
   const content = `
@@ -9,7 +10,7 @@ export function renderBlogIndex(base) {
   <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><span>Blog</span></div>
   <h1 style="font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;margin-bottom:8px;color:var(--ink)">📝 Career Blog</h1>
   <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">Insights and career advice for remote job seekers.</p>
-  <div class="ad-slot"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved space — insert your ad network snippet here</div><!-- AD SLOT: blog-index-top --></div>
+  ${adSlot('blog-index-top')}
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:20px">
     ${BLOG_POSTS.map(p => `
       <a href="/blog/${p.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;display:block;transition:all .25s;text-decoration:none;box-shadow:var(--shadow)" onmouseover="this.style.borderColor='var(--brand)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform='none'">
@@ -34,7 +35,7 @@ export function renderArticlePage(post, base) {
   <h1 class="article-title">${post.title}</h1>
   <div class="article-meta"><span>📅 ${post.date}</span><span>⏱ ${post.readTime}</span><span>✍️ JobNova Team</span></div>
   <div class="article-body">${post.body}</div>
-  <div class="ad-slot" style="margin-top:28px"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved space — insert your ad network snippet here</div><!-- AD SLOT: blog-article-footer --></div>
+  ${adSlot('blog-article-footer', 'margin-top:28px')}
   <div style="margin-top:28px;display:flex;gap:10px;flex-wrap:wrap">
     <a href="/blog" class="back-link" style="margin-bottom:0">← Back to Blog</a>
     <a href="/" style="display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;padding:9px 18px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none">Browse Remote Jobs →</a>

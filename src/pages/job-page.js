@@ -4,6 +4,7 @@ import { logoImgHtml, remoteTagHtml, catForTitleServer } from '../components/job
 import { CATEGORY_META } from '../config/constants.js';
 import { baseLayout } from '../layout/base-layout.js';
 import { slugify } from '../lib/entities.js';
+import { adSlot } from '../components/ad-slot.js';
 
 export function renderJobPage(job, related, base) {
   let skills = [];
@@ -57,7 +58,7 @@ export function renderJobPage(job, related, base) {
       ${skills.length ? `<div class="sec-label">Required Skills</div><div class="skills-wrap">${skills.map(s => `<a href="/skills/${slugify(s)}" class="skill-tag" style="text-decoration:none">${s}</a>`).join('')}</div>` : ''}
       <div class="sec-label">About the Role</div>
       <div class="desc-wrap">${job.description && job.description.length > 20 ? job.description : 'Full description available on the company website.'}</div>
-      <div class="ad-slot"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved 320×50 space — insert your ad network snippet here</div><!-- AD SLOT: job-detail-inline — paste your ad network embed code in this container --></div>
+      ${adSlot('job-detail-inline')}
       <a href="${job.url}" target="_blank" rel="noopener noreferrer" class="apply-big">Apply Now →</a>
     </div>
   </div>
@@ -72,7 +73,7 @@ export function renderJobPage(job, related, base) {
           <span style="color:var(--ink3)">›</span>
         </a>`).join('')}
     </div>` : ''}
-  <div class="ad-slot" style="margin-top:24px"><div class="ad-slot-label">Advertisement Slot</div><div class="ad-slot-hint">Reserved space — insert your ad network snippet here</div><!-- AD SLOT: job-detail-footer — paste your ad network embed code in this container --></div>
+  ${adSlot('job-detail-footer', 'margin-top:24px')}
 </div>`;
   return baseLayout(`${job.title} at ${job.company} — JobNova`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`);
 }
