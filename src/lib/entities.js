@@ -13,6 +13,25 @@
 // pages, but flagged for a future proper geo-normalization pass.
 // ════════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════════
+// SECURITY: escapeHtml — every field that ultimately comes from an
+// external, unmoderated source (scraped LinkedIn/JobDataLake listings,
+// visitor-submitted "Post a Job" entries) MUST pass through this before
+// being inserted into any HTML template. Without it, a single malicious
+// job title/company/description containing a <script> or phishing markup
+// would render and execute directly on the page — exactly the kind of
+// content Google Safe Browsing flags as "Deceptive Pages".
+// ════════════════════════════════════════════════════════════════
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function slugify(str) {
   return (str || '')
     .toString()
