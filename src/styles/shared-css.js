@@ -75,6 +75,7 @@ button{font-family:inherit}
 .ad-slot{border:1.5px dashed var(--border2);border-radius:12px;padding:14px;text-align:center;margin:16px 0;background:var(--surface2)}
 .ad-slot-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
 .ad-slot-hint{font-size:11px;color:var(--ink3)}
+.ad-slot-live{border:none;padding:0;background:transparent;display:flex;justify-content:center;overflow:hidden}
 
 /* ── POST A JOB MODAL (shared, works on every page) ── */
 .pj-overlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.6);backdrop-filter:blur(3px);z-index:500;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
