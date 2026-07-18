@@ -13,6 +13,8 @@
 import { makeAdminCookie, verifyAdminCookie } from '../auth/admin-auth.js';
 import { renderAdminLogin, renderAdminDashboard } from '../pages/admin.js';
 import { insertApiSource } from '../db/sync.js';
+import { renderJobsListContent, renderJobEditContent, renderDuplicatesContent } from '../pages/admin/jobs.js';
+import { adminShell } from '../pages/admin/shell.js';
 
 function errorPage(err) {
   const msg = (err && err.message ? err.message : String(err)).replace(/</g, '&lt;');
@@ -111,6 +113,99 @@ export async function handleAdminRoute(url, request, env, base) {
       const id = form.get('id');
       if (id) await env.DB.prepare("UPDATE job_postings SET status='rejected' WHERE id = ?").bind(id).run();
       return new Response(null, { status: 302, headers: { 'Location': '/admin' } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs' && request.method === 'GET') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response(renderAdminLogin(false), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      const content = await renderJobsListContent(env, url.searchParams);
+      return new Response(adminShell('jobs', content), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/edit' && request.method === 'GET') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response(renderAdminLogin(false), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      const id = url.searchParams.get('id');
+      const content = await renderJobEditContent(env, id);
+      return new Response(adminShell('jobs', content), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/duplicates' && request.method === 'GET') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response(renderAdminLogin(false), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      const content = await renderDuplicatesContent(env);
+      return new Response(adminShell('jobs', content), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/update' && request.method === 'POST') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      if (!id) return new Response(null, { status: 302, headers: { 'Location': '/admin/jobs' } });
+      const skills = (form.get('skills') || '').toString().split(',').map(s => s.trim()).filter(Boolean);
+      await env.DB.prepare(
+        `UPDATE jobs SET title=?, company=?, location=?, url=?, salary=?, seniority=?, remote_type=?, employment_type=?, skills=?, description=?, featured=? WHERE id=?`
+      ).bind(
+        (form.get('title') || '').toString().slice(0, 200),
+        (form.get('company') || '').toString().slice(0, 200),
+        (form.get('location') || '').toString().slice(0, 200),
+        (form.get('url') || '').toString().slice(0, 500),
+        (form.get('salary') || '').toString().slice(0, 60),
+        (form.get('seniority') || '').toString().slice(0, 60),
+        (form.get('remote_type') || '').toString(),
+        (form.get('employment_type') || '').toString(),
+        JSON.stringify(skills),
+        (form.get('description') || '').toString().slice(0, 20000),
+        form.get('featured') ? 1 : 0,
+        id
+      ).run();
+      return new Response(null, { status: 302, headers: { 'Location': `/admin/jobs/edit?id=${id}&flash=${encodeURIComponent('Job updated')}` } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/delete' && request.method === 'POST') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      const redirect = (form.get('redirect') || '/admin/jobs').toString();
+      if (id) await env.DB.prepare('DELETE FROM jobs WHERE id = ?').bind(id).run();
+      const sep = redirect.includes('?') ? '&' : '?';
+      return new Response(null, { status: 302, headers: { 'Location': `${redirect}${sep}flash=${encodeURIComponent('Job deleted')}` } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/feature' && request.method === 'POST') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const id = form.get('id');
+      const redirect = (form.get('redirect') || '/admin/jobs').toString();
+      if (id) await env.DB.prepare('UPDATE jobs SET featured = CASE WHEN featured = 1 THEN 0 ELSE 1 END WHERE id = ?').bind(id).run();
+      const sep = redirect.includes('?') ? '&' : '?';
+      return new Response(null, { status: 302, headers: { 'Location': `${redirect}${sep}flash=${encodeURIComponent('Job pin updated')}` } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/jobs/delete-stale' && request.method === 'POST') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const form = await request.formData();
+      const days = Math.max(7, parseInt(form.get('days') || '45', 10) || 45);
+      const r = await env.DB.prepare(`DELETE FROM jobs WHERE created_at < datetime('now', '-' || ? || ' day')`).bind(days).run();
+      return new Response(null, { status: 302, headers: { 'Location': `/admin/jobs?flash=${encodeURIComponent(`Deleted ${r.meta?.changes || 0} stale jobs`)}` } });
     } catch (e) { return errorPage(e); }
   }
 
