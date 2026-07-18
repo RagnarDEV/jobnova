@@ -44,7 +44,7 @@ atOptions = {
 <script src="https://www.highperformanceformat.com/a741ce3155049c468de74c92a5f8a23e/invoke.js"></script>`;
 
 const ADS = {
-  'homepage-results-top': BANNER_300x250,
+  'homepage-results-top': BANNER_320x50,
   'job-detail-inline': BANNER_320x50,
   'job-detail-footer': BANNER_300x250,
   'blog-index-top': BANNER_300x250,
