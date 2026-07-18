@@ -43,7 +43,13 @@ const SHELL_CSS = `
 .toast.show{opacity:1;transform:translateY(0)}
 .skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--border) 50%,var(--surface2) 75%);background-size:200% 100%;animation:skel 1.3s ease-in-out infinite;border-radius:8px}
 @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
-@media(max-width:768px){.adm-sidebar{display:none}}
+.adm-mobile-nav{display:none}
+@media(max-width:768px){
+  .adm-sidebar{display:none}
+  .adm-mobile-nav{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+  .adm-mobile-nav a{flex-shrink:0;padding:7px 14px;border-radius:20px;background:var(--surface2);color:var(--ink2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
+  .adm-mobile-nav a.active{background:var(--brand);color:#fff}
+}
 `;
 
 const SHELL_SCRIPT = `
@@ -131,6 +137,9 @@ export function adminShell(activeId, content) {
     ${NAV_ITEMS.map(n => `<a href="${n.href}" class="adm-nav-link${n.id === activeId ? ' active' : ''}">${n.icon} ${n.label}</a>`).join('')}
   </aside>
   <main class="adm-main">
+    <nav class="adm-mobile-nav">
+      ${NAV_ITEMS.map(n => `<a href="${n.href}" class="${n.id === activeId ? ' active' : ''}">${n.icon} ${n.label}</a>`).join('')}
+    </nav>
     <div class="adm-topbar">
       <button class="theme-toggle" id="themeToggleBtn" onclick="jnToggleTheme()" title="Toggle dark mode">🌙</button>
     </div>
