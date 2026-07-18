@@ -61,7 +61,7 @@ export async function handleApiRoute(url, request, env) {
     if (salaryMin) { conditions.push("CAST(REPLACE(REPLACE(salary,'$',''),'k','') AS INTEGER) >= ?"); params.push(parseInt(salaryMin)); }
     if (days) { conditions.push("created_at >= datetime('now', '-' || ? || ' days')"); params.push(parseInt(days)); }
     const where = conditions.length ? " WHERE " + conditions.join(" AND ") : "";
-    const { results } = await env.DB.prepare(`SELECT * FROM jobs${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`).bind(...params).all();
+    const { results } = await env.DB.prepare(`SELECT * FROM jobs${where} ORDER BY featured DESC, id DESC LIMIT ${limit} OFFSET ${offset}`).bind(...params).all();
     const { results: cr } = await env.DB.prepare(`SELECT COUNT(*) as total FROM jobs${where}`).bind(...params).all();
     return new Response(JSON.stringify({ jobs: results, total: cr[0]?.total || 0, page }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
   }
