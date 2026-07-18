@@ -98,4 +98,19 @@ export async function ensureTable(env) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  // Phase 2 (Admin: Job Management) — manual "pin to top" flag, independent
+  // of the automatic salary-based "Hot" badge already used on the public site.
+  await ensureColumn(env, 'jobs', 'featured', 'INTEGER DEFAULT 0');
+
+  // Phase 2 (Admin: Company Management) — there is no separate `companies`
+  // table (companies are just a text column on `jobs`), so "hide a company"
+  // is modeled as a small exclusion list rather than a company record.
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS hidden_companies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      company_lower TEXT UNIQUE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
 }
