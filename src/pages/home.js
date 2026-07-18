@@ -20,7 +20,7 @@ export async function renderMainHTML(env, base) {
   await ensureTable(env);
   let initialJobs = [], initialTotal = 0, totalJobsCount = 0;
   try {
-    const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY id DESC LIMIT 20").all();
+    const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY featured DESC, id DESC LIMIT 20").all();
     initialJobs = results || [];
     const { results: cr } = await env.DB.prepare("SELECT COUNT(*) as total FROM jobs").all();
     initialTotal = cr[0]?.total || 0;
