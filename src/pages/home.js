@@ -11,20 +11,36 @@ import { ICON_HEAD } from '../assets/favicon.js';
 import { FEATURED_COMPANIES, CATEGORY_ORDER, CATEGORY_META } from '../config/constants.js';
 import { jobCardSSR } from '../components/job-card.js';
 import { adSlot } from '../components/ad-slot.js';
+import { escapeHtml } from '../lib/entities.js';
 
 export function categoryChipsServer() {
-  return CATEGORY_ORDER.map(k => `<button class="chip" data-cat="${k}" onclick="filterCat('${k}','${CATEGORY_META[k].label}')">${CATEGORY_META[k].emoji} ${CATEGORY_META[k].label}</button>`).join('');
+  return CATEGORY_ORDER.map(k => `<button class="chip" data-cat="${k}" onclick="filterCat('${k}','${CATEGORY_META[k].label}')">${CATEGORY_META[k].label}</button>`).join('');
 }
 
 export async function renderMainHTML(env, base) {
   await ensureTable(env);
-  let initialJobs = [], initialTotal = 0, totalJobsCount = 0;
+  let initialJobs = [], initialTotal = 0, totalJobsCount = 0, companiesCount = 0;
   try {
     const { results } = await env.DB.prepare("SELECT * FROM jobs ORDER BY featured DESC, id DESC LIMIT 20").all();
     initialJobs = results || [];
     const { results: cr } = await env.DB.prepare("SELECT COUNT(*) as total FROM jobs").all();
     initialTotal = cr[0]?.total || 0;
     totalJobsCount = initialTotal;
+    const { results: ccr } = await env.DB.prepare("SELECT COUNT(DISTINCT LOWER(company)) as c FROM jobs WHERE company IS NOT NULL AND company != ''").all();
+    companiesCount = ccr[0]?.c || 0;
+  } catch (e) {}
+
+  // "Top X Jobs" curated sections (one per category, a few most-recent jobs
+  // each) — shown below the main list. Skips categories with zero jobs.
+  let categorySections = [];
+  try {
+    categorySections = await Promise.all(CATEGORY_ORDER.map(async (key) => {
+      const { results } = await env.DB.prepare(
+        "SELECT * FROM jobs WHERE LOWER(title) LIKE ? ORDER BY featured DESC, id DESC LIMIT 4"
+      ).bind(`%${key}%`).all();
+      return { key, meta: CATEGORY_META[key], jobs: results || [] };
+    }));
+    categorySections = categorySections.filter(s => s.jobs.length > 0);
   } catch (e) {}
 
   const itemListSchema = JSON.stringify({
@@ -49,11 +65,11 @@ export async function renderMainHTML(env, base) {
 <meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JobNova — Find Your Next Remote Job</title>
-<meta name="description" content="JobNova is a curated remote job board with ${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : ''} verified positions in development, design, marketing, data and more. Updated hourly.">
+<meta name="description" content="JobNova is a curated remote job board with ${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : ''} verified positions in development, design, marketing, data and more. Updated every few hours.">
 <meta name="robots" content="index, follow">
 ${ICON_HEAD}
 <meta property="og:title" content="JobNova — Find Your Next Remote Job">
-<meta property="og:description" content="Curated remote jobs updated hourly. Browse, save, and get alerted — or post your own opening.">
+<meta property="og:description" content="Curated remote jobs updated every few hours. Browse, save, and get alerted — or post your own opening.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${base}">
 <meta property="og:site_name" content="JobNova">
@@ -65,7 +81,7 @@ ${ICON_HEAD}
 <script type="application/ld+json">${orgSchema}</script>
 <script type="application/ld+json">${itemListSchema}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 ${SHARED_CSS}
 
@@ -75,7 +91,7 @@ ${SHARED_CSS}
 .hero-inner{max-width:1180px;margin:0 auto;position:relative}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:5px 13px;font-size:12px;color:#fff;font-weight:700;margin-bottom:20px}
 .hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
-.hero-title{font-family:'Space Grotesk',sans-serif;font-size:44px;font-weight:800;letter-spacing:-1.4px;line-height:1.08;margin-bottom:16px;color:#fff;max-width:680px}
+.hero-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:44px;font-weight:800;letter-spacing:-1.4px;line-height:1.08;margin-bottom:16px;color:#fff;max-width:680px}
 .hero-title .hl{position:relative;display:inline-block}
 .hero-title .hl::after{content:'';position:absolute;left:0;right:0;bottom:2px;height:5px;background:var(--coral);border-radius:3px;opacity:.85;z-index:-1}
 .hero-sub{color:rgba(255,255,255,.85);font-size:16px;margin-bottom:28px;line-height:1.65;max-width:540px}
@@ -88,7 +104,7 @@ ${SHARED_CSS}
 .search-btn:hover{background:#e64d68;transform:translateY(-1px)}
 .hero-stats{display:flex;gap:30px;flex-wrap:wrap}
 .hero-stat{display:flex;flex-direction:column}
-.hero-stat-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2}
+.hero-stat-num{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:#fff;line-height:1.2}
 .hero-stat-label{font-size:11px;color:rgba(255,255,255,.65);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
 
 /* ── FEATURED COMPANIES STRIP ── */
@@ -96,7 +112,7 @@ ${SHARED_CSS}
 .fc-inner{max-width:1180px;margin:0 auto}
 .fc-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:16px;text-align:center}
 .fc-logos{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
-.fc-logos span{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;color:var(--ink3);opacity:.55;transition:all .25s;cursor:default}
+.fc-logos span{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:700;color:var(--ink3);opacity:.55;transition:all .25s;cursor:default}
 .fc-logos span:hover{opacity:1;color:var(--brand)}
 
 /* ── FILTER BAR ── */
@@ -126,43 +142,51 @@ ${SHARED_CSS}
 .adv-toggle-btn:hover,.adv-toggle-btn.active{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
 
 /* ── JOB LIST (pastel-tinted cards, remote.io rhythm) ── */
-.jobs-list{display:flex;flex-direction:column;gap:10px}
-.job-card{border:1px solid var(--border);border-radius:14px;display:block;text-decoration:none;color:inherit;transition:all .2s;position:relative;overflow:hidden}
-.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cat-color,var(--brand));opacity:0;transition:opacity .2s}
+.jobs-list{display:flex;flex-direction:column;gap:9px}
+.job-card{border:1px solid var(--border);border-radius:13px;display:block;text-decoration:none;color:inherit;transition:all .2s;position:relative;overflow:hidden}
+.job-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--cat-color,var(--brand));opacity:.55;transition:opacity .2s,width .2s}
 .job-card:hover{border-color:var(--cat-color,var(--brand));box-shadow:var(--shadow-lg);transform:translateY(-2px)}
-.job-card:hover::before{opacity:1}
-.card-inner{padding:16px}
-.card-row1{display:flex;align-items:flex-start;gap:12px}
-.co-logo{width:46px;height:46px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--brand);overflow:hidden;flex-shrink:0}
-.co-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
+.job-card:hover::before{opacity:1;width:5px}
+.card-inner{padding:13px 14px}
+.card-row1{display:flex;align-items:flex-start;gap:11px}
+.co-logo{width:54px;height:54px;border-radius:12px;background:var(--brand-soft);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--brand);overflow:hidden;flex-shrink:0}
+.co-logo img{width:100%;height:100%;object-fit:contain;padding:8px}
 .card-body{flex:1;min-width:0}
 .card-badges{display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap}
-.cat-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--cat-color,var(--brand))}
+.cat-dot{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--cat-color,var(--brand))}
 .cat-dot .dot{width:6px;height:6px;border-radius:50%;background:var(--cat-color,var(--brand))}
-.job-title-card{font-size:15px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:4px;transition:color .2s}
+.job-title-card{font-size:14px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:3px;transition:color .2s}
 .job-card:hover .job-title-card{color:var(--cat-color,var(--brand))}
-.job-co-card{font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.job-co-card{font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:5px}
 .verified-ico{font-size:11px}
 .job-meta-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.card-right{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid rgba(18,22,43,.06)}
-.salary-badge{font-size:12px;font-weight:800;color:var(--salary);background:rgba(15,174,121,.08);border:1px solid rgba(15,174,121,.18);padding:4px 12px;border-radius:8px;white-space:nowrap}
+.card-right{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid rgba(18,22,43,.06)}
+.salary-badge{font-size:11.5px;font-weight:800;color:var(--salary);background:rgba(15,174,121,.08);border:1px solid rgba(15,174,121,.18);padding:4px 11px;border-radius:8px;white-space:nowrap}
 .card-actions{display:flex;align-items:center;gap:5px}
-.act-btn{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all .2s;position:relative;z-index:1}
+.act-btn{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:all .2s;position:relative;z-index:1}
 .act-btn:hover{background:var(--brand-soft);color:var(--brand);transform:scale(1.08)}
 .act-btn.saved{background:rgba(245,166,35,.12);border-color:var(--amber);color:var(--amber)}
-.arr-btn{width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink2);display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .25s}
+.arr-btn{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink2);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .25s}
 .job-card:hover .arr-btn{background:var(--cat-color,var(--brand));border-color:transparent;color:#fff}
-.card-footer{padding:8px 16px;border-top:1px solid rgba(18,22,43,.06);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--ink3)}
+.card-footer{padding:7px 14px;border-top:1px solid rgba(18,22,43,.06);display:flex;align-items:center;justify-content:space-between;font-size:10.5px;color:var(--ink3)}
+
+/* ── TOP CATEGORY SECTIONS (remote.io-style curated rows) ── */
+.cat-sections{max-width:1180px;margin:0 auto;padding:8px 24px 40px;display:flex;flex-direction:column;gap:30px}
+.cat-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cat-section-title{display:flex;align-items:center;gap:8px;font-size:18px;color:var(--ink)}
+.cat-section-dot{width:9px;height:9px;border-radius:50%;background:var(--cat-color,var(--brand));flex-shrink:0}
+.cat-section-more{background:none;border:none;font-size:12.5px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:inherit;padding:6px 10px;border-radius:8px}
+.cat-section-more:hover{color:var(--brand);background:var(--brand-soft)}
 
 /* ── TAGS ── */
 .tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap}
-.tag-loc{color:var(--ink3);font-size:11px;font-weight:600}
+.tag-loc{background:var(--surface2);color:var(--ink2);font-size:10.5px;font-weight:600;border:none;padding:3px 10px;border-radius:20px}
 .tag-remote{background:rgba(15,174,121,.1);color:var(--green);border:1px solid rgba(15,174,121,.2)}
 .tag-hybrid{background:rgba(245,166,35,.1);color:var(--amber);border:1px solid rgba(245,166,35,.2)}
-.tag-onsite{background:rgba(255,255,255,.6);color:var(--ink2);border:1px solid var(--border2)}
-.tag-type{background:rgba(255,255,255,.6);color:var(--ink2);border:1px solid var(--border2)}
-.tag-new{background:rgba(15,174,121,.14);color:var(--green);border:1px solid rgba(15,174,121,.3);font-size:10px;padding:2px 8px;font-weight:800;letter-spacing:.8px;border-radius:20px}
-.tag-hot{background:rgba(255,92,122,.14);color:var(--coral);border:1px solid rgba(255,92,122,.3);font-size:10px;padding:2px 8px;font-weight:800;border-radius:20px}
+.tag-onsite{background:var(--surface2);color:var(--ink2);border:none}
+.tag-type{background:var(--surface2);color:var(--ink2);border:none}
+.tag-new{background:var(--pastel-blue);color:var(--brand);border:none;font-size:10px;padding:3px 9px;font-weight:800;letter-spacing:.3px;border-radius:20px}
+.tag-hot{background:var(--pastel-yellow);color:#B45309;border:none;font-size:10px;padding:3px 9px;font-weight:800;border-radius:20px}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:20px;right:16px;background:var(--ink);border:1px solid var(--ink);border-radius:12px;padding:12px 18px;font-size:13px;color:#fff;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(18,22,43,.25);transform:translateY(100px);opacity:0;transition:all .3s;z-index:9999;max-width:300px}
@@ -216,6 +240,7 @@ ${SHARED_CSS}
   .fc-logos{gap:22px}
   .fc-logos span{font-size:15px}
   .content-wrap{padding:14px}
+  .cat-sections{padding:8px 14px 30px}
   .card-inner{padding:14px 12px}
   .co-logo{width:42px;height:42px;border-radius:9px}
   .job-title-card{font-size:13px}
@@ -237,7 +262,7 @@ ${mobileHeaderHtml()}
   <div id="vJobs">
     <div class="hero">
       <div class="hero-inner">
-        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Updated hourly · ${totalJobsCount ? totalJobsCount.toLocaleString() + '+ verified listings' : 'AI-matched listings'}</div>
+        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Updated every few hours · ${totalJobsCount ? totalJobsCount.toLocaleString() + '+ verified listings' : 'AI-matched listings'}</div>
         <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
         <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p>
         <div class="search-row">
@@ -249,8 +274,8 @@ ${mobileHeaderHtml()}
         </div>
         <div class="hero-stats">
           <div class="hero-stat"><span class="hero-stat-num" id="stat-jobs">${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : '—'}</span><span class="hero-stat-label">Active Jobs</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">${FEATURED_COMPANIES.length}+</span><span class="hero-stat-label">Companies</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">Hourly</span><span class="hero-stat-label">Updates</span></div>
+          <div class="hero-stat"><span class="hero-stat-num">${companiesCount ? companiesCount.toLocaleString() + '+' : '—'}</span><span class="hero-stat-label">Companies</span></div>
+          <div class="hero-stat"><span class="hero-stat-num">Fresh</span><span class="hero-stat-label">Every Few Hours</span></div>
         </div>
       </div>
     </div>
@@ -285,13 +310,25 @@ ${mobileHeaderHtml()}
       <div class="jobs-list" id="jobsList">${ssrJobsHtml}</div>
       <div class="pagination" id="pagination"></div>
     </div>
+
+    ${categorySections.length ? `
+    <div class="cat-sections">
+      ${categorySections.map(sec => `
+        <div class="cat-section">
+          <div class="cat-section-hdr">
+            <h2 class="cat-section-title" style="--cat-color:${sec.meta.color}"><span class="cat-section-dot"></span>Top ${escapeHtml(sec.meta.label)} Jobs</h2>
+            <button class="cat-section-more" onclick="filterCat('${sec.key}','${escapeHtml(sec.meta.label)}')">View all →</button>
+          </div>
+          <div class="jobs-list">${sec.jobs.map((j, i) => jobCardSSR(j, i)).join('')}</div>
+        </div>`).join('')}
+    </div>` : ''}
   </div>
 
   <!-- SAVED -->
   <div id="vSaved" style="display:none">
     <div class="content-wrap" style="max-width:800px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--ink)">🔖 Saved Jobs</h2>
+        <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:var(--ink)">🔖 Saved Jobs</h2>
         <button onclick="clearAllSaved()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink3);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">Clear All</button>
       </div>
       <div class="jobs-list" id="savedList"></div>
@@ -303,7 +340,7 @@ ${mobileHeaderHtml()}
     <div class="content-wrap">
       <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:7px;color:var(--ink3);font-size:13px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:22px;font-weight:600">← Back to Jobs</button>
       <div class="form-card">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--ink)">🔔 Job Alerts</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--ink)">🔔 Job Alerts</div>
         <div style="font-size:13px;color:var(--ink2);margin-bottom:22px">Get notified by email when new matching jobs are posted.</div>
         <div class="form-group">
           <label class="form-label">Your Email</label>
@@ -340,7 +377,7 @@ let adv={remote:'',employ:'',seniority:'',salaryMin:'',days:''};
 let hasLoadedOnce=true;
 
 function initials(n){return(n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
-function logoHtml(co,sz='46px'){
+function logoHtml(co,sz='54px'){
   const slug=(co||'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const domain=slug+'.com';
   const ini=initials(co);
@@ -364,10 +401,9 @@ function catForTitle(title){
   for(const k of order){if(t.includes(k))return k;}
   return 'developer';
 }
-function pastelFor(j,idx){
+function pastelFor(j){
+  if(j.featured)return'var(--pastel-blue)';
   if(isHot(j.salary))return'var(--pastel-yellow)';
-  if(isNew(j.created_at))return'var(--pastel-blue)';
-  if(idx%7===3)return'var(--pastel-pink)';
   return'var(--surface)';
 }
 function isNew(ts){if(!ts)return false;return Date.now()-new Date(ts).getTime()<86400000;}
@@ -440,6 +476,10 @@ function renderSkeletons(){
     </div>\`).join('');
 }
 
+function esc(s){
+  if(s===null||s===undefined)return'';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function renderJobsList(){
   document.getElementById('jobsList').innerHTML=jobs.map((j,idx)=>{
     const saved=savedIds.includes(j.id);
@@ -448,29 +488,30 @@ function renderJobsList(){
     const timeAgo=j.created_at?getTimeAgo(new Date(j.created_at)):'';
     const k=catForTitle(j.title);
     const meta=CAT_META[k];
-    const bg=pastelFor(j,idx);
+    const bg=pastelFor(j);
     return\`<a href="/job/\${j.id}" class="job-card" style="--cat-color:\${meta.color};background:\${bg};animation:fadeInUp .3s ease \${Math.min(idx,6)*.04}s both">
       <div class="card-inner">
         <div class="card-row1">
           \${logoHtml(j.company)}
           <div class="card-body">
             <div class="card-badges">
-              <span class="cat-dot"><span class="dot"></span>\${meta.emoji} \${meta.label}</span>
+              <span class="cat-dot"><span class="dot"></span>\${esc(meta.label)}</span>
+              \${j.featured?'<span class="tag-pinned">📌 Pinned</span>':''}
               \${nw?'<span class="tag-new">✦ NEW</span>':''}
               \${hot?'<span class="tag-hot">🔥 HOT</span>':''}
             </div>
-            <div class="job-title-card">\${j.title}</div>
-            <div class="job-co-card">\${j.company} <span class="verified-ico">✅</span></div>
+            <div class="job-title-card">\${esc(j.title)}</div>
+            <div class="job-co-card">\${esc(j.company)} <span class="verified-ico">✅</span></div>
             <div class="job-meta-row">
-              \${j.location?'<span class="tag tag-loc">📍 '+j.location+'</span>':''}
+              \${j.location?'<span class="tag tag-loc">📍 '+esc(j.location)+'</span>':''}
               \${remoteTag(j.remote_type)}
-              \${j.employment_type?'<span class="tag tag-type">'+j.employment_type.replace(/_/g,' ')+'</span>':''}
-              \${j.seniority?'<span class="tag tag-type">'+j.seniority+'</span>':''}
+              \${j.employment_type?'<span class="tag tag-type">'+esc(j.employment_type.replace(/_/g,' '))+'</span>':''}
+              \${j.seniority?'<span class="tag tag-type">'+esc(j.seniority)+'</span>':''}
             </div>
           </div>
         </div>
         <div class="card-right">
-          \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':'<div></div>'}
+          \${j.salary?'<div class="salary-badge">'+esc(j.salary)+'</div>':'<div></div>'}
           <div class="card-actions">
             <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">🔖</button>
             <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">🔗</button>
@@ -541,13 +582,13 @@ function renderSaved(){
         <div class="card-row1">
           \${logoHtml(j.company)}
           <div class="card-body">
-            <div class="job-title-card">\${j.title}</div>
-            <div class="job-co-card">\${j.company}</div>
+            <div class="job-title-card">\${esc(j.title)}</div>
+            <div class="job-co-card">\${esc(j.company)}</div>
             <div class="job-meta-row">\${remoteTag(j.remote_type)}</div>
           </div>
         </div>
         <div class="card-right">
-          \${j.salary?'<div class="salary-badge">'+j.salary+'</div>':'<div></div>'}
+          \${j.salary?'<div class="salary-badge">'+esc(j.salary)+'</div>':'<div></div>'}
           <button class="act-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">🔖</button>
         </div>
       </div>
