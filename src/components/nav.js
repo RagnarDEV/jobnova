@@ -27,6 +27,8 @@ export function mobileHeaderHtml() {
 </div>
 <div class="mob-menu" id="mobMenu">
   <a href="/">🔍 Browse Jobs</a>
+  <a href="/companies">🏢 Companies</a>
+  <a href="/categories">🗂️ Categories</a>
   <button onclick="if(window.goView){goView('saved');closeMobMenu();}else{location='/'}">🔖 Saved Jobs</button>
   <a href="/blog">📝 Career Blog</a>
   <button onclick="openPostJobModal();closeMobMenu();">➕ Post a Job</button>

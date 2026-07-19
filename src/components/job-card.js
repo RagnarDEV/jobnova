@@ -56,12 +56,14 @@ export function catForTitleServer(title) {
   for (const k of CATEGORY_ORDER) { if (t.includes(k)) return k; }
   return 'developer';
 }
-export function pastelForJob(job, idx) {
+export function pastelForJob(job) {
+  // Background tint is now meaningful, not decorative: only pinned and
+  // high-salary jobs get a tint. "New" already has its own badge, so it
+  // doesn't need to also recolor the whole card — that was just visual
+  // noise competing with the badges for attention.
+  if (job.featured) return 'var(--pastel-blue)';
   const isHot = job.salary && parseInt(job.salary.replace(/\D/g, '').slice(0, 3)) >= 150;
-  const isNew = job.created_at && Date.now() - new Date(job.created_at).getTime() < 86400000;
   if (isHot) return 'var(--pastel-yellow)';
-  if (isNew) return 'var(--pastel-blue)';
-  if (idx % 7 === 3) return 'var(--pastel-pink)';
   return 'var(--surface)';
 }
 export function timeAgoServer(dateStr) {
@@ -77,15 +79,16 @@ export function jobCardSSR(job, idx) {
   const meta = CATEGORY_META[catForTitleServer(job.title)];
   const isNew = job.created_at && Date.now() - new Date(job.created_at).getTime() < 86400000;
   const isHot = job.salary && parseInt(job.salary.replace(/\D/g, '').slice(0, 3)) >= 150;
-  const bg = pastelForJob(job, idx);
+  const bg = pastelForJob(job);
   const timeAgo = timeAgoServer(job.created_at);
   return `<a href="/job/${job.id}" class="job-card" style="--cat-color:${meta.color};background:${bg};animation:fadeInUp .3s ease ${Math.min(idx, 6) * .04}s both">
     <div class="card-inner">
       <div class="card-row1">
-        ${logoImgHtml(job.company, '46px', 'co-logo')}
+        ${logoImgHtml(job.company, '54px', 'co-logo')}
         <div class="card-body">
           <div class="card-badges">
-            <span class="cat-dot"><span class="dot"></span>${meta.emoji} ${meta.label}</span>
+            <span class="cat-dot"><span class="dot"></span>${meta.label}</span>
+            ${job.featured ? '<span class="tag-pinned">📌 Pinned</span>' : ''}
             ${isNew ? '<span class="tag-new">✦ NEW</span>' : ''}
             ${isHot ? '<span class="tag-hot">🔥 HOT</span>' : ''}
           </div>
