@@ -15,8 +15,8 @@ export const SHARED_CSS = `
   --r:14px;--shadow:0 2px 10px rgba(18,22,43,.05);--shadow-lg:0 16px 40px rgba(18,22,43,.12);
 }
 html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
-h1,h2,h3,.font-display{font-family:'Space Grotesk','Inter',sans-serif}
+body{font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,.font-display{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit}
@@ -30,7 +30,7 @@ button{font-family:inherit}
 
 /* ── NAV (dark navy, site-wide) ── */
 .nav{background:var(--navy);border-bottom:1px solid var(--navy-border);padding:0 24px;height:66px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
-.nav-logo{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.5px;color:#fff;display:flex;align-items:center;gap:7px}
+.nav-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:800;letter-spacing:-.5px;color:#fff;display:flex;align-items:center;gap:7px}
 .nav-logo img{width:26px;height:26px;border-radius:7px}
 .nav-logo .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(15,174,121,.25)}
 .nav-links{display:flex;align-items:center;gap:2px}
@@ -42,7 +42,7 @@ button{font-family:inherit}
 
 /* ── MOBILE HEADER + MENU (shared, replaces old bottom tab bar) ── */
 .mob-hdr{display:none;padding:0 16px;height:60px;background:var(--navy);align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:10px}
-.mob-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px}
+.mob-logo{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px}
 .mob-logo img{width:24px;height:24px;border-radius:6px}
 .mob-btns{display:flex;gap:8px;align-items:center}
 .mob-cta{background:var(--coral);color:#fff;border:none;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer}
@@ -57,7 +57,7 @@ button{font-family:inherit}
 .site-footer{background:var(--navy);color:var(--navy-ink2);padding:52px 24px 28px;margin-top:40px}
 .sf-inner{max-width:1180px;margin:0 auto}
 .sf-top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px;padding-bottom:36px;border-bottom:1px solid var(--navy-border)}
-.sf-brand{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:14px}
+.sf-brand{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:14px}
 .sf-brand img{width:26px;height:26px;border-radius:7px}
 .sf-desc{font-size:13px;line-height:1.75;max-width:280px;margin-bottom:18px}
 .sf-social{display:flex;gap:10px}
@@ -77,12 +77,15 @@ button{font-family:inherit}
 .ad-slot-hint{font-size:11px;color:var(--ink3)}
 .ad-slot-live{border:none;padding:0;background:transparent;display:flex;justify-content:center;overflow:hidden}
 
+/* ── PINNED BADGE (shared across every job-card renderer) ── */
+.tag-pinned{background:var(--brand-soft);color:var(--brand);border:none;font-size:10px;padding:3px 9px;font-weight:800;letter-spacing:.3px;border-radius:20px}
+
 /* ── POST A JOB MODAL (shared, works on every page) ── */
 .pj-overlay{display:none;position:fixed;inset:0;background:rgba(11,18,32,.6);backdrop-filter:blur(3px);z-index:500;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto}
 .pj-overlay.open{display:flex;animation:fadeIn .2s ease}
 .pj-modal{background:var(--surface);border-radius:18px;max-width:560px;width:100%;padding:28px 26px 26px;box-shadow:var(--shadow-lg);position:relative;margin:auto}
 .pj-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:9px;border:1px solid var(--border2);background:var(--surface2);color:var(--ink2);cursor:pointer;font-size:15px}
-.pj-title{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.pj-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:21px;font-weight:700;color:var(--ink);margin-bottom:4px}
 .pj-sub{font-size:13px;color:var(--ink3);margin-bottom:20px}
 .pj-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pj-group{margin-bottom:14px}
