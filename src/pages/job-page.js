@@ -3,7 +3,7 @@
 import { logoImgHtml, remoteTagHtml, catForTitleServer } from '../components/job-card.js';
 import { CATEGORY_META } from '../config/constants.js';
 import { baseLayout } from '../layout/base-layout.js';
-import { slugify, escapeHtml } from '../lib/entities.js';
+import { slugify, escapeHtml, cleanDescription } from '../lib/entities.js';
 import { adSlot } from '../components/ad-slot.js';
 
 // SECURITY: JSON.stringify() does NOT escape "<", so a malicious job title
@@ -21,12 +21,13 @@ export function renderJobPage(job, related, base) {
   const isNew = job.created_at && Date.now() - new Date(job.created_at).getTime() < 86400000;
   const isHot = job.salary && parseInt(job.salary.replace(/\D/g, '').slice(0, 3)) >= 150;
   const canonical = `${base}/job/${job.id}`;
-  const desc = job.description && job.description.length > 20
-    ? job.description.slice(0, 160).replace(/\n/g, ' ') + '...'
+  const cleanDesc = cleanDescription(job.description);
+  const desc = cleanDesc.length > 20
+    ? cleanDesc.slice(0, 160).replace(/\n/g, ' ') + '...'
     : `${job.title} at ${job.company}. ${job.location || 'Remote'}${job.salary ? ' — ' + job.salary : ''}. Apply on JobNova.`;
   const schema = safeJsonLd({
     "@context": "https://schema.org", "@type": "JobPosting",
-    "title": job.title, "description": job.description || desc,
+    "title": job.title, "description": cleanDesc || desc,
     "hiringOrganization": { "@type": "Organization", "name": job.company },
     "jobLocation": { "@type": "Place", "address": job.location || "Remote" },
     "employmentType": job.employment_type ? job.employment_type.toUpperCase().replace('_', ' ') : "FULL_TIME",
@@ -66,7 +67,7 @@ export function renderJobPage(job, related, base) {
     <div class="job-body">
       ${skills.length ? `<div class="sec-label">Required Skills</div><div class="skills-wrap">${skills.map(s => `<a href="/skills/${slugify(s)}" class="skill-tag" style="text-decoration:none">${escapeHtml(s)}</a>`).join('')}</div>` : ''}
       <div class="sec-label">About the Role</div>
-      <div class="desc-wrap">${job.description && job.description.length > 20 ? escapeHtml(job.description) : 'Full description available on the company website.'}</div>
+      <div class="desc-wrap">${cleanDesc.length > 20 ? escapeHtml(cleanDesc) : 'Full description available on the company website.'}</div>
       ${adSlot('job-detail-inline')}
       <a href="${escapeHtml(job.url)}" target="_blank" rel="noopener noreferrer" class="apply-big">Apply Now →</a>
     </div>
