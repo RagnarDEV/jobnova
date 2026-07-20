@@ -32,6 +32,39 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+// ════════════════════════════════════════════════════════════════
+// cleanDescription — job descriptions arrive from many external
+// providers in inconsistent shapes: some send raw HTML markup
+// (Greenhouse's `content` field, some RapidAPI sources), and some send
+// HTML that is ALREADY entity-escaped (e.g. "&lt;p&gt;..."). Escaping
+// that a second time for display produces visible tag soup like
+// "&lt;div class=&quot;...&quot;&gt;" instead of clean readable text.
+// This normalizes both cases down to plain text — decode any existing
+// entities, strip tags (turning block breaks into newlines so
+// paragraphs don't run together), then collapse extra whitespace.
+// Callers should still pass the result through escapeHtml() before
+// inserting into HTML — this function's job is cleanup, not safety.
+// ════════════════════════════════════════════════════════════════
+export function cleanDescription(raw) {
+  if (!raw) return '';
+  let text = String(raw);
+  text = text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#x26;/gi, '&')
+    .replace(/&amp;/g, '&');
+  text = text
+    .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  return text;
+}
+
 export function slugify(str) {
   return (str || '')
     .toString()
