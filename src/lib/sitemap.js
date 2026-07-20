@@ -64,5 +64,8 @@ export async function buildSitemapXml(env, base, { blogPosts = [], categoryOrder
     for (const s of skills) add(`${base}/skills/${s.slug}`, { changefreq: 'weekly', priority: '0.5' });
   } catch (e) {}
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`.trim();
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join('\n')}
+</urlset>`.trim();
 }

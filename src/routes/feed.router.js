@@ -14,8 +14,8 @@ export async function handleFeedRoute(url, env, base) {
     // whitespace character (easy to pick up invisibly through copy/paste
     // across many edits) breaks that even when the source looks clean —
     // strip it here so the served bytes are guaranteed correct regardless.
-    xml = xml.replace(/^\uFEFF/, '').trimStart();
-    return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" } });
+    xml = xml.replace(/^\uFEFF/, '').trim();
+    return new Response(xml, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600", "X-Content-Type-Options": "nosniff" } });
   }
 
   if (url.pathname === '/feed.rss') {
