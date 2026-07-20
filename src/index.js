@@ -15,6 +15,7 @@
 import { ensureTable } from './db/schema.js';
 import { recordVisit } from './db/analytics.js';
 import { syncJobs } from './db/sync.js';
+import { BASE_URL } from './config/constants.js';
 
 import { handleAssetsRoute, ASSET_PATHS } from './routes/assets.router.js';
 import { handleFeedRoute } from './routes/feed.router.js';
@@ -25,9 +26,24 @@ import { handleApiRoute } from './routes/api.router.js';
 
 const NON_TRACKED_STATIC_PATHS = new Set([...ASSET_PATHS, '/sitemap.xml', '/feed.rss']);
 
+// Permanent 301 redirect from any retired domain to the current canonical
+// one (BASE_URL, in src/config/constants.js). Required for Google's
+// "Change of Address" verification, which checks that the old domain
+// actually forwards visitors — not just that it's abandoned — and it also
+// prevents duplicate-content indexing if the old host is ever reachable
+// again. Add any other retired hostnames to this set as domains change.
+const RETIRED_HOSTS = new Set(['jobnova.manasa.workers.dev']);
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Retired domain? Redirect permanently before touching D1 or anything
+    // else — this must work even if the database is having a bad day.
+    if (RETIRED_HOSTS.has(url.hostname)) {
+      return Response.redirect(`${BASE_URL}${url.pathname}${url.search}`, 301);
+    }
+
     const base = `${url.protocol}//${url.host}`;
     await ensureTable(env);
 
