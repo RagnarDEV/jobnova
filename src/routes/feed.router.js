@@ -8,7 +8,20 @@ import { CATEGORY_ORDER } from '../config/constants.js';
 
 export async function handleFeedRoute(url, env, base) {
   if (url.pathname === '/sitemap.xml') {
-    let xml = await buildSitemapXml(env, base, { blogPosts: BLOG_POSTS, categoryOrder: CATEGORY_ORDER });
+    let xml;
+    try {
+      xml = await buildSitemapXml(env, base, { blogPosts: BLOG_POSTS, categoryOrder: CATEGORY_ORDER });
+    } catch (e) {
+      // CRITICAL: never let a D1 hiccup (timeout, transient error) turn into
+      // Cloudflare's generic HTML "Worker threw exception" page — that is
+      // exactly what makes Google report "couldn't fetch sitemap" even
+      // though the rest of the site (lighter pages) works fine. Log the
+      // real reason to Cloudflare's live logs (Observability tab) so it can
+      // be diagnosed, but still answer with a valid, if minimal, sitemap so
+      // Google always gets parseable XML back with a 200 status.
+      console.error('[sitemap.xml] build failed:', e && e.stack || e);
+      xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${base}/</loc></url></urlset>`;
+    }
     // Defensive: some SEO validators reject the XML declaration unless it
     // is the literal first character of the response body. A stray BOM or
     // whitespace character (easy to pick up invisibly through copy/paste
