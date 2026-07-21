@@ -31,7 +31,8 @@ export function handleAssetsRoute(url, base) {
     return new Response(manifestJson(base), { headers: { "Content-Type": "application/manifest+json", "Cache-Control": "public, max-age=86400" } });
   }
   if (url.pathname === '/robots.txt') {
-    const robots = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${base}/sitemap.xml`;
+    // Use BASE_URL for sitemap location to ensure consistency
+    const robots = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: https://jobnova.sryze.cc/sitemap.xml`;
     return new Response(robots, { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400" } });
   }
   return null;

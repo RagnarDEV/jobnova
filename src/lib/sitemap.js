@@ -1,30 +1,13 @@
 // src/lib/sitemap.js
 import { listCompanies, listSkills } from './entities.js';
 
-/**
- * Escapes special XML characters in a string.
- */
-function xmlEscape(str) {
-  if (typeof str !== 'string') return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
 // `blogPosts` / `categoryOrder` are passed in from index.js since they're
 // still defined as in-code constants there (static content stays static).
 export async function buildSitemapXml(env, base, { blogPosts = [], categoryOrder = [] } = {}) {
   const urls = [];
-  const add = (loc, opts = {}) => {
-    // Ensure the location is properly escaped just in case
-    const escapedLoc = xmlEscape(loc);
-    urls.push(
-      `<url><loc>${escapedLoc}</loc>${opts.changefreq ? `<changefreq>${opts.changefreq}</changefreq>` : ''}${opts.priority ? `<priority>${opts.priority}</priority>` : ''}${opts.lastmod ? `<lastmod>${opts.lastmod}</lastmod>` : ''}</url>`
-    );
-  };
+  const add = (loc, opts = {}) => urls.push(
+    `<url><loc>${loc}</loc>${opts.changefreq ? `<changefreq>${opts.changefreq}</changefreq>` : ''}${opts.priority ? `<priority>${opts.priority}</priority>` : ''}${opts.lastmod ? `<lastmod>${opts.lastmod}</lastmod>` : ''}</url>`
+  );
 
   // core pages
   add(`${base}/`, { changefreq: 'hourly', priority: '1.0' });
@@ -66,6 +49,6 @@ export async function buildSitemapXml(env, base, { blogPosts = [], categoryOrder
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join('\n')}
+${urls.join('')}
 </urlset>`.trim();
 }

@@ -45,6 +45,7 @@ export default {
     }
 
     const base = `${url.protocol}//${url.host}`;
+    await ensureTable(env);
 
     // ── static brand assets (favicons, manifest, robots.txt) ──
     const assetResponse = handleAssetsRoute(url, base);
@@ -57,8 +58,8 @@ export default {
     if (trackable && ctx?.waitUntil) ctx.waitUntil(recordVisit(env, request, url));
 
     // ── sitemap.xml / feed.rss ──
-    await ensureTable(env);
-    const feedResponse = await handleFeedRoute(url, env, base);
+    // Use the canonical BASE_URL for feeds to ensure Google Search Console consistency
+    const feedResponse = await handleFeedRoute(url, env, BASE_URL);
     if (feedResponse) return feedResponse;
 
     // ── /admin/* ──
