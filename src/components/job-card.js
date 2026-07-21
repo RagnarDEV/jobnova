@@ -5,6 +5,7 @@
 
 import { CATEGORY_META, CATEGORY_ORDER } from '../config/constants.js';
 import { slugify, escapeHtml } from '../lib/entities.js';
+import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBookmark, iconLink, iconArrowRight, iconBadgeCheck, iconClock, iconGlobe, iconBuilding } from '../assets/icons.js';
 
 export function logoImgHtml(company, size = '64px', cls = 'job-logo') {
   const safeCompany = escapeHtml(company);
@@ -22,7 +23,7 @@ export function logoImgHtml(company, size = '64px', cls = 'job-logo') {
 
 export function remoteTagHtml(t) {
   if (!t) return '';
-  const m = { fully_remote: ['tag-remote', '🌐 Remote'], hybrid: ['tag-hybrid', '🏢 Hybrid'], on_site: ['tag-onsite', '📍 On-site'], onsite: ['tag-onsite', '📍 On-site'] };
+  const m = { fully_remote: ['tag-remote', iconGlobe({ size: 11 }) + ' Remote'], hybrid: ['tag-hybrid', iconBuilding({ size: 11 }) + ' Hybrid'], on_site: ['tag-onsite', iconMapPin({ size: 11 }) + ' On-site'], onsite: ['tag-onsite', iconMapPin({ size: 11 }) + ' On-site'] };
   const [cls, lbl] = m[t] || ['tag-onsite', escapeHtml(t.replace(/_/g, ' '))];
   return `<span class="tag ${cls}">${lbl}</span>`;
 }
@@ -88,14 +89,14 @@ export function jobCardSSR(job, idx) {
         <div class="card-body">
           <div class="card-badges">
             <span class="cat-dot"><span class="dot"></span>${meta.label}</span>
-            ${job.featured ? '<span class="tag-pinned">📌 Pinned</span>' : ''}
-            ${isNew ? '<span class="tag-new">✦ NEW</span>' : ''}
-            ${isHot ? '<span class="tag-hot">🔥 HOT</span>' : ''}
+            ${job.featured ? `<span class="tag-pinned">${iconPin({ size: 11 })} Pinned</span>` : ''}
+            ${isNew ? `<span class="tag-new">${iconSparkle({ size: 11 })} NEW</span>` : ''}
+            ${isHot ? `<span class="tag-hot">${iconFlame({ size: 11 })} HOT</span>` : ''}
           </div>
           <div class="job-title-card">${escapeHtml(job.title)}</div>
-          <div class="job-co-card">${escapeHtml(job.company)} <span class="verified-ico" title="Verified">✅</span></div>
+          <div class="job-co-card">${escapeHtml(job.company)} <span class="verified-ico" title="Verified">${iconBadgeCheck({ size: 12 })}</span></div>
           <div class="job-meta-row">
-            ${job.location ? '<span class="tag tag-loc">📍 ' + escapeHtml(job.location) + '</span>' : ''}
+            ${job.location ? `<span class="tag tag-loc">${iconMapPin({ size: 11 })} ` + escapeHtml(job.location) + '</span>' : ''}
             ${remoteTagHtml(job.remote_type)}
             ${job.employment_type ? '<span class="tag tag-type">' + escapeHtml(job.employment_type.replace(/_/g, ' ')) + '</span>' : ''}
           </div>
@@ -104,13 +105,13 @@ export function jobCardSSR(job, idx) {
       <div class="card-right">
         ${job.salary ? '<div class="salary-badge">' + escapeHtml(job.salary) + '</div>' : '<div></div>'}
         <div class="card-actions">
-          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();toggleSave(${job.id})" id="sb-${job.id}">🔖</button>
-          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(${job.id})">🔗</button>
-          <div class="arr-btn">→</div>
+          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();toggleSave(${job.id})" id="sb-${job.id}">${iconBookmark()}</button>
+          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(${job.id})">${iconLink()}</button>
+          <div class="arr-btn">${iconArrowRight()}</div>
         </div>
       </div>
     </div>
-    ${timeAgo ? '<div class="card-footer"><span>⏰ ' + timeAgo + '</span><span style="color:' + meta.color + '">View →</span></div>' : ''}
+    ${timeAgo ? `<div class="card-footer"><span>${iconClock({ size: 11 })} ` + timeAgo + `</span><span style="color:${meta.color}">View ${iconArrowRight({ size: 11 })}</span></div>` : ''}
   </a>`;
 }
 
