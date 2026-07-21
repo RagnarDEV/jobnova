@@ -45,3 +45,16 @@ export const iconGlobe = (opts) => svg(`<circle cx="12" cy="12" r="10"/><path d=
 
 // Remote-type tag: hybrid / on-site.
 export const iconBuilding = (opts) => svg(`<path d="M6 22V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v18"/><path d="M6 12H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h2"/><path d="M18 9h2a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>`, opts);
+
+export const iconSearch = (opts) => svg(`<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>`, opts);
+export const iconX = (opts) => svg(`<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`, opts);
+export const iconFilter = (opts) => svg(`<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>`, opts);
+export const iconBell = (opts) => svg(`<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>`, opts);
+export const iconCheck = (opts) => svg(`<path d="M20 6 9 17l-5-5"/>`, opts);
+export const iconInfo = (opts) => svg(`<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>`, opts);
+export const iconAlertTriangle = (opts) => svg(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>`, opts);
+export const iconMenu = (opts) => svg(`<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>`, opts);
+export const iconFolder = (opts) => svg(`<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>`, opts);
+export const iconFileText = (opts) => svg(`<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`, opts);
+export const iconPlus = (opts) => svg(`<path d="M5 12h14"/><path d="M12 5v14"/>`, opts);
+export const iconLock = (opts) => svg(`<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`, opts);
