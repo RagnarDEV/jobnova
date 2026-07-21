@@ -176,15 +176,13 @@ ${SHARED_CSS}
 .job-co-card{font-size:11.5px;color:var(--ink2);font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:5px}
 .verified-ico{font-size:11px}
 .job-meta-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.card-right{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:9px;border-top:1px solid rgba(18,22,43,.06)}
+.card-right{display:flex;align-items:center;justify-content:flex-end;margin-top:9px;padding-top:9px;border-top:1px solid rgba(18,22,43,.06)}
+.card-time-corner{position:absolute;top:12px;right:14px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--ink3);background:rgba(255,255,255,.85);padding:3px 8px;border-radius:20px;z-index:2}
 .salary-badge{font-size:11.5px;font-weight:800;color:var(--salary);background:rgba(15,174,121,.08);border:1px solid rgba(15,174,121,.18);padding:4px 11px;border-radius:8px;white-space:nowrap}
-.card-actions{display:flex;align-items:center;gap:5px}
-.act-btn{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:all .2s;position:relative;z-index:1}
+.card-time-corner{position:absolute;top:10px;right:12px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--ink3);background:rgba(255,255,255,.75);padding:3px 8px;border-radius:20px;z-index:1}
+.act-btn{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;z-index:1}
 .act-btn:hover{background:var(--brand-soft);color:var(--brand);transform:scale(1.08)}
 .act-btn.saved{background:rgba(245,166,35,.12);border-color:var(--amber);color:var(--amber)}
-.arr-btn{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.6);border:1px solid var(--border2);color:var(--ink2);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .25s}
-.job-card:hover .arr-btn{background:var(--cat-color,var(--brand));border-color:transparent;color:#fff}
-.card-footer{padding:7px 14px;border-top:1px solid rgba(18,22,43,.06);display:flex;align-items:center;justify-content:space-between;font-size:10.5px;color:var(--ink3)}
 
 /* ── TOP CATEGORY SECTIONS (remote.io-style curated rows) ── */
 .cat-sections{max-width:1180px;margin:0 auto;padding:8px 24px 40px;display:flex;flex-direction:column;gap:30px}
@@ -493,7 +491,6 @@ function esc(s){
 }
 function renderJobsList(){
   document.getElementById('jobsList').innerHTML=jobs.map((j,idx)=>{
-    const saved=savedIds.includes(j.id);
     const nw=isNew(j.created_at);
     const hot=isHot(j.salary);
     const timeAgo=j.created_at?getTimeAgo(new Date(j.created_at)):'';
@@ -501,6 +498,7 @@ function renderJobsList(){
     const meta=CAT_META[k];
     const bg=pastelFor(j);
     return\`<a href="/job/\${j.id}" class="job-card" style="--cat-color:\${meta.color};background:\${bg};animation:fadeInUp .3s ease \${Math.min(idx,6)*.04}s both">
+      \${timeAgo?'<span class="card-time-corner">'+ICONS.clock+' '+timeAgo+'</span>':''}
       <div class="card-inner">
         <div class="card-row1">
           \${logoHtml(j.company)}
@@ -521,16 +519,8 @@ function renderJobsList(){
             </div>
           </div>
         </div>
-        <div class="card-right">
-          \${j.salary?'<div class="salary-badge">'+esc(j.salary)+'</div>':'<div></div>'}
-          <div class="card-actions">
-            <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">\${ICONS.bookmark}</button>
-            <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">\${ICONS.link}</button>
-            <div class="arr-btn">\${ICONS.arrowRight}</div>
-          </div>
-        </div>
+        \${j.salary?'<div class="card-right"><div class="salary-badge">'+esc(j.salary)+'</div></div>':''}
       </div>
-      \${timeAgo?'<div class="card-footer"><span>'+ICONS.clock+' '+timeAgo+'</span><span style="color:var(--cat-color)">View '+ICONS.arrowRightSm+'</span></div>':''}
     </a>\`;
   }).join('');
 }
