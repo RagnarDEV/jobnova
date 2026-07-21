@@ -266,7 +266,7 @@ ${mobileHeaderHtml()}
        <br><br> <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p><br><br>
         <div class="search-row">
           <div class="search-wrap">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon">&#x26B2;</span>
             <input type="text" class="search-input" id="searchInput" placeholder="Job title, skill, or company..." oninput="debounceSearch(this.value)">
           </div>
           <button class="search-btn" onclick="document.getElementById('searchInput').focus()">Search</button>
