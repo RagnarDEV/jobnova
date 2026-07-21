@@ -262,7 +262,7 @@ ${mobileHeaderHtml()}
   <div id="vJobs">
     <div class="hero">
       <div class="hero-inner">
-        <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
+       <br><br> <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
        <br><br> <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p><br><br>
         <div class="search-row">
           <div class="search-wrap">
