@@ -12,7 +12,7 @@ import { FEATURED_COMPANIES, CATEGORY_ORDER, CATEGORY_META } from '../config/con
 import { jobCardSSR } from '../components/job-card.js';
 import { adSlot } from '../components/ad-slot.js';
 import { escapeHtml } from '../lib/entities.js';
-import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBookmark, iconLink, iconArrowRight, iconBadgeCheck, iconClock, iconGlobe, iconBuilding } from '../assets/icons.js';
+import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBookmark, iconLink, iconArrowRight, iconBadgeCheck, iconClock, iconGlobe, iconBuilding, iconSearch, iconX, iconFilter, iconBell, iconCheck, iconInfo, iconAlertTriangle } from '../assets/icons.js';
 
 // Same icon markup used by the server-rendered cards (job-card.js) is
 // reused for client-rendered cards (search/filter/pagination results) by
@@ -23,7 +23,10 @@ const CLIENT_ICONS = {
   sparkle: iconSparkle({ size: 11 }), flame: iconFlame({ size: 11 }), pin: iconPin({ size: 11 }),
   mapPin: iconMapPin({ size: 11 }), bookmark: iconBookmark(), link: iconLink(), arrowRight: iconArrowRight(),
   arrowRightSm: iconArrowRight({ size: 11 }), badgeCheck: iconBadgeCheck({ size: 12 }), clock: iconClock({ size: 11 }),
-  globe: iconGlobe({ size: 11 }), building: iconBuilding({ size: 11 }),
+  globe: iconGlobe({ size: 11 }), building: iconBuilding({ size: 11 }), search: iconSearch({ size: 16 }),
+  x: iconX({ size: 13 }), filter: iconFilter({ size: 14 }), bell: iconBell({ size: 20 }),
+  check: iconCheck({ size: 16 }), info: iconInfo({ size: 16 }), alertTriangle: iconAlertTriangle({ size: 32 }),
+  searchLg: iconSearch({ size: 32 }),
 };
 
 export function categoryChipsServer() {
@@ -279,7 +282,7 @@ ${mobileHeaderHtml()}
         <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p>
         <div class="search-row">
           <div class="search-wrap">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon">${iconSearch({ size: 16 })}</span>
             <input type="text" class="search-input" id="searchInput" placeholder="Job title, skill, or company..." oninput="debounceSearch(this.value)">
           </div>
           <button class="search-btn" onclick="document.getElementById('searchInput').focus()">Search</button>
@@ -305,13 +308,13 @@ ${mobileHeaderHtml()}
       <label class="filter-label">Seniority<select class="filter-select" id="fSeniority" onchange="applyAdvFilters()"><option value="">All</option><option value="Junior">Junior</option><option value="Mid">Mid-Level</option><option value="Senior">Senior</option><option value="Staff">Staff</option></select></label>
       <label class="filter-label">Min Salary<input type="number" class="salary-input" id="fSalaryMin" placeholder="$k" oninput="debounceAdv()"></label>
       <label class="filter-label">Posted<select class="filter-select" id="fDate" onchange="applyAdvFilters()"><option value="">Any time</option><option value="1">Today</option><option value="7">This week</option><option value="30">This month</option></select></label>
-      <button class="clear-btn" onclick="clearAdvFilters()">✕ Clear</button>
+      <button class="clear-btn" onclick="clearAdvFilters()">${iconX({ size: 12 })} Clear</button>
     </div>
 
     <div class="content-wrap">
       <div class="results-hdr">
         <div class="results-count" id="resultsCount"><strong>${initialTotal.toLocaleString()}</strong> jobs found</div>
-        <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">⚙️ Filters</button>
+        <button class="adv-toggle-btn" id="advToggleBtn" onclick="toggleAdv()">${iconFilter({ size: 13 })} Filters</button>
       </div>
       ${adSlot('homepage-results-top')}
       <div class="jobs-list" id="jobsList">${ssrJobsHtml}</div>
@@ -347,7 +350,7 @@ ${mobileHeaderHtml()}
     <div class="content-wrap">
       <button onclick="goView('jobs')" style="display:inline-flex;align-items:center;gap:7px;color:var(--ink3);font-size:13px;cursor:pointer;border:none;background:none;font-family:inherit;margin-bottom:22px;font-weight:600">← Back to Jobs</button>
       <div class="form-card">
-        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--ink)">🔔 Job Alerts</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;color:var(--ink);display:flex;align-items:center;gap:8px">${iconBell({ size: 20 })} Job Alerts</div>
         <div style="font-size:13px;color:var(--ink2);margin-bottom:22px">Get notified by email when new matching jobs are posted.</div>
         <div class="form-group">
           <label class="form-label">Your Email</label>
@@ -368,7 +371,7 @@ ${footerHtml(base)}
 ${postJobModalHtml()}
 
 <div class="toast" id="toast">
-  <span id="toastIcon" style="font-size:16px">✓</span>
+  <span id="toastIcon" style="font-size:16px;display:inline-flex"></span>
   <span id="toastMsg">Done</span>
   <div class="toast-bar" id="toastBar"></div>
 </div>
@@ -431,7 +434,7 @@ function showToast(msg,type='success'){
   const icon=document.getElementById('toastIcon');
   const bar=document.getElementById('toastBar');
   document.getElementById('toastMsg').textContent=msg;
-  icon.textContent=type==='success'?'✓':'ℹ';
+  icon.innerHTML=type==='success'?ICONS.check:ICONS.info;
   icon.style.color=type==='success'?'#0FAE79':'#3556FF';
   el.className='toast show';
   if(bar){bar.style.animation='none';bar.offsetHeight;bar.style.animation='toast-bar 3s linear forwards';}
@@ -549,13 +552,13 @@ async function loadJobs(){
     jobs=data.jobs||[];total=data.total||0;
     document.getElementById('resultsCount').innerHTML=\`<strong>\${total.toLocaleString()}</strong> jobs found\${cat?' in <strong>'+(CAT_META[cat]?CAT_META[cat].label:cat)+'</strong>':''}\${srch?' for "<strong>'+srch+'</strong>"':''}\`;
     if(!jobs.length){
-      document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">🔍</div><h3>No jobs found</h3><p>Try different keywords or clear filters</p></div>\`;
+      document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">\${ICONS.searchLg}</div><h3>No jobs found</h3><p>Try different keywords or clear filters</p></div>\`;
       return;
     }
     renderJobsList();
     renderPagination();
   }catch(e){
-    document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">⚠️</div><h3>Failed to load</h3><p>Refresh and try again</p></div>\`;
+    document.getElementById('jobsList').innerHTML=\`<div class="empty"><div class="e-icon">\${ICONS.alertTriangle}</div><h3>Failed to load</h3><p>Refresh and try again</p></div>\`;
   }
 }
 
@@ -623,7 +626,7 @@ async function submitAlert(){
   try{
     const res=await fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,keywords:alertKws})});
     const d=await res.json();
-    if(d.success){showToast('Subscribed! 🎉');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
+    if(d.success){showToast('Subscribed successfully');document.getElementById('alertEmail').value='';alertKws=[];renderKws();}
     else showToast(d.error||'Something went wrong','info');
   }catch(e){showToast('Failed. Try again.','info');}
 }
