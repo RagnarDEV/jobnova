@@ -12,6 +12,19 @@ import { FEATURED_COMPANIES, CATEGORY_ORDER, CATEGORY_META } from '../config/con
 import { jobCardSSR } from '../components/job-card.js';
 import { adSlot } from '../components/ad-slot.js';
 import { escapeHtml } from '../lib/entities.js';
+import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBookmark, iconLink, iconArrowRight, iconBadgeCheck, iconClock, iconGlobe, iconBuilding } from '../assets/icons.js';
+
+// Same icon markup used by the server-rendered cards (job-card.js) is
+// reused for client-rendered cards (search/filter/pagination results) by
+// serializing it once here and injecting it as data — guarantees the two
+// renderers can never visually drift apart, and avoids duplicating SVG
+// path data in two places.
+const CLIENT_ICONS = {
+  sparkle: iconSparkle({ size: 11 }), flame: iconFlame({ size: 11 }), pin: iconPin({ size: 11 }),
+  mapPin: iconMapPin({ size: 11 }), bookmark: iconBookmark(), link: iconLink(), arrowRight: iconArrowRight(),
+  arrowRightSm: iconArrowRight({ size: 11 }), badgeCheck: iconBadgeCheck({ size: 12 }), clock: iconClock({ size: 11 }),
+  globe: iconGlobe({ size: 11 }), building: iconBuilding({ size: 11 }),
+};
 
 export function categoryChipsServer() {
   return CATEGORY_ORDER.map(k => `<button class="chip" data-cat="${k}" onclick="filterCat('${k}','${CATEGORY_META[k].label}')">${CATEGORY_META[k].label}</button>`).join('');
@@ -262,11 +275,11 @@ ${mobileHeaderHtml()}
   <div id="vJobs">
     <div class="hero">
       <div class="hero-inner">
-       <br><br><br> <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
-        <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p><br><br><br>
+        <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
+        <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p>
         <div class="search-row">
           <div class="search-wrap">
-            <span class="search-icon">&#x26B2;</span>
+            <span class="search-icon">🔍</span>
             <input type="text" class="search-input" id="searchInput" placeholder="Job title, skill, or company..." oninput="debounceSearch(this.value)">
           </div>
           <button class="search-btn" onclick="document.getElementById('searchInput').focus()">Search</button>
@@ -322,7 +335,7 @@ ${mobileHeaderHtml()}
   <div id="vSaved" style="display:none">
     <div class="content-wrap" style="max-width:800px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-        <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:var(--ink)">🔖 Saved Jobs</h2>
+        <h2 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px">${iconBookmark({ size: 20 })} Saved Jobs</h2>
         <button onclick="clearAllSaved()" style="padding:7px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--ink3);font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">Clear All</button>
       </div>
       <div class="jobs-list" id="savedList"></div>
@@ -360,9 +373,10 @@ ${postJobModalHtml()}
   <div class="toast-bar" id="toastBar"></div>
 </div>
 
-<script>window.__CATEGORY_META__=${JSON.stringify(CATEGORY_META)};</script>
+<script>window.__CATEGORY_META__=${JSON.stringify(CATEGORY_META)};window.__ICONS__=${JSON.stringify(CLIENT_ICONS)};</script>
 <script>
 const CAT_META=window.__CATEGORY_META__;
+const ICONS=window.__ICONS__;
 let pg=1,cat='',srch='',advT,srchT;
 let jobs=${JSON.stringify(initialJobs)},total=${initialTotal};
 let savedIds=JSON.parse(localStorage.getItem('jn_saved')||'[]');
@@ -385,7 +399,7 @@ function logoHtml(co,sz='54px'){
 }
 function remoteTag(t){
   if(!t)return'';
-  const m={fully_remote:['tag-remote','🌐 Remote'],hybrid:['tag-hybrid','🏢 Hybrid'],on_site:['tag-onsite','📍 On-site'],onsite:['tag-onsite','📍 On-site']};
+  const m={fully_remote:['tag-remote',ICONS.globe+' Remote'],hybrid:['tag-hybrid',ICONS.building+' Hybrid'],on_site:['tag-onsite',ICONS.mapPin+' On-site'],onsite:['tag-onsite',ICONS.mapPin+' On-site']};
   const[cls,lbl]=m[t]||['tag-onsite',t.replace(/_/g,' ')];
   return\`<span class="tag \${cls}">\${lbl}</span>\`;
 }
@@ -490,14 +504,14 @@ function renderJobsList(){
           <div class="card-body">
             <div class="card-badges">
               <span class="cat-dot"><span class="dot"></span>\${esc(meta.label)}</span>
-              \${j.featured?'<span class="tag-pinned">📌 Pinned</span>':''}
-              \${nw?'<span class="tag-new">✦ NEW</span>':''}
-              \${hot?'<span class="tag-hot">🔥 HOT</span>':''}
+              \${j.featured?'<span class="tag-pinned">'+ICONS.pin+' Pinned</span>':''}
+              \${nw?'<span class="tag-new">'+ICONS.sparkle+' NEW</span>':''}
+              \${hot?'<span class="tag-hot">'+ICONS.flame+' HOT</span>':''}
             </div>
             <div class="job-title-card">\${esc(j.title)}</div>
-            <div class="job-co-card">\${esc(j.company)} <span class="verified-ico">✅</span></div>
+            <div class="job-co-card">\${esc(j.company)} <span class="verified-ico">\${ICONS.badgeCheck}</span></div>
             <div class="job-meta-row">
-              \${j.location?'<span class="tag tag-loc">📍 '+esc(j.location)+'</span>':''}
+              \${j.location?'<span class="tag tag-loc">'+ICONS.mapPin+' '+esc(j.location)+'</span>':''}
               \${remoteTag(j.remote_type)}
               \${j.employment_type?'<span class="tag tag-type">'+esc(j.employment_type.replace(/_/g,' '))+'</span>':''}
               \${j.seniority?'<span class="tag tag-type">'+esc(j.seniority)+'</span>':''}
@@ -507,13 +521,13 @@ function renderJobsList(){
         <div class="card-right">
           \${j.salary?'<div class="salary-badge">'+esc(j.salary)+'</div>':'<div></div>'}
           <div class="card-actions">
-            <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">🔖</button>
-            <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">🔗</button>
-            <div class="arr-btn">→</div>
+            <button class="act-btn\${saved?' saved':''}" onclick="event.preventDefault();event.stopPropagation();toggleSave(\${j.id})" id="sb-\${j.id}">\${ICONS.bookmark}</button>
+            <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(\${j.id})">\${ICONS.link}</button>
+            <div class="arr-btn">\${ICONS.arrowRight}</div>
           </div>
         </div>
       </div>
-      \${timeAgo?'<div class="card-footer"><span>⏰ '+timeAgo+'</span><span style="color:var(--cat-color)">View →</span></div>':''}
+      \${timeAgo?'<div class="card-footer"><span>'+ICONS.clock+' '+timeAgo+'</span><span style="color:var(--cat-color)">View '+ICONS.arrowRightSm+'</span></div>':''}
     </a>\`;
   }).join('');
 }
@@ -548,7 +562,7 @@ async function loadJobs(){
 function toggleSave(id){
   const idx=savedIds.indexOf(id);
   if(idx>=0){savedIds.splice(idx,1);showToast('Removed from saved','info');}
-  else{savedIds.push(id);showToast('Job saved! 🔖');}
+  else{savedIds.push(id);showToast('Job saved! '+ICONS.bookmark);}
   localStorage.setItem('jn_saved',JSON.stringify(savedIds));
   const btn=document.getElementById('sb-'+id);
   if(btn)btn.classList.toggle('saved',savedIds.includes(id));
@@ -556,18 +570,18 @@ function toggleSave(id){
 window.toggleSave=toggleSave;
 function shareJob(id){
   const url=window.location.origin+'/job/'+id;
-  navigator.clipboard.writeText(url).then(()=>showToast('Link copied! 🔗')).catch(()=>showToast('Copied!'));
+  navigator.clipboard.writeText(url).then(()=>showToast('Link copied! '+ICONS.link)).catch(()=>showToast('Copied!'));
 }
 window.shareJob=shareJob;
 
 function renderSaved(){
   if(!savedIds.length){
-    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">🔖</div><h3>No saved jobs yet</h3><p>Tap the bookmark icon to save jobs</p></div>\`;
+    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">\${ICONS.bookmark}</div><h3>No saved jobs yet</h3><p>Tap the bookmark icon to save jobs</p></div>\`;
     return;
   }
   const saved=jobs.filter(j=>savedIds.includes(j.id));
   if(!saved.length){
-    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">🔖</div><h3>Browse jobs and save the ones you like</h3></div>\`;
+    document.getElementById('savedList').innerHTML=\`<div class="empty"><div class="e-icon">\${ICONS.bookmark}</div><h3>Browse jobs and save the ones you like</h3></div>\`;
     return;
   }
   document.getElementById('savedList').innerHTML=saved.map(j=>\`
@@ -583,7 +597,7 @@ function renderSaved(){
         </div>
         <div class="card-right">
           \${j.salary?'<div class="salary-badge">'+esc(j.salary)+'</div>':'<div></div>'}
-          <button class="act-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">🔖</button>
+          <button class="act-btn saved" onclick="event.preventDefault();toggleSave(\${j.id});renderSaved()">\${ICONS.bookmark}</button>
         </div>
       </div>
     </a>\`).join('');
