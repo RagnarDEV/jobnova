@@ -5,7 +5,7 @@
 
 import { CATEGORY_META, CATEGORY_ORDER } from '../config/constants.js';
 import { slugify, escapeHtml } from '../lib/entities.js';
-import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBookmark, iconLink, iconArrowRight, iconBadgeCheck, iconClock, iconGlobe, iconBuilding } from '../assets/icons.js';
+import { iconSparkle, iconFlame, iconPin, iconMapPin, iconBadgeCheck, iconClock, iconGlobe, iconBuilding } from '../assets/icons.js';
 
 export function logoImgHtml(company, size = '64px', cls = 'job-logo') {
   const safeCompany = escapeHtml(company);
@@ -83,6 +83,7 @@ export function jobCardSSR(job, idx) {
   const bg = pastelForJob(job);
   const timeAgo = timeAgoServer(job.created_at);
   return `<a href="/job/${job.id}" class="job-card" style="--cat-color:${meta.color};background:${bg};animation:fadeInUp .3s ease ${Math.min(idx, 6) * .04}s both">
+    ${timeAgo ? `<span class="card-time-corner">${iconClock({ size: 11 })} ${timeAgo}</span>` : ''}
     <div class="card-inner">
       <div class="card-row1">
         ${logoImgHtml(job.company, '54px', 'co-logo')}
@@ -102,16 +103,8 @@ export function jobCardSSR(job, idx) {
           </div>
         </div>
       </div>
-      <div class="card-right">
-        ${job.salary ? '<div class="salary-badge">' + escapeHtml(job.salary) + '</div>' : '<div></div>'}
-        <div class="card-actions">
-          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();toggleSave(${job.id})" id="sb-${job.id}">${iconBookmark()}</button>
-          <button class="act-btn" onclick="event.preventDefault();event.stopPropagation();shareJob(${job.id})">${iconLink()}</button>
-          <div class="arr-btn">${iconArrowRight()}</div>
-        </div>
-      </div>
+      ${job.salary ? '<div class="card-right"><div class="salary-badge">' + escapeHtml(job.salary) + '</div></div>' : ''}
     </div>
-    ${timeAgo ? `<div class="card-footer"><span>${iconClock({ size: 11 })} ` + timeAgo + `</span><span style="color:${meta.color}">View ${iconArrowRight({ size: 11 })}</span></div>` : ''}
   </a>`;
 }
 
