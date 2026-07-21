@@ -262,7 +262,6 @@ ${mobileHeaderHtml()}
   <div id="vJobs">
     <div class="hero">
       <div class="hero-inner">
-        <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Updated every few hours · ${totalJobsCount ? totalJobsCount.toLocaleString() + '+ verified listings' : 'AI-matched listings'}</div>
         <h1 class="hero-title">Find your next <span class="hl">remote job</span></h1>
         <p class="hero-sub">Browse curated remote positions from top companies worldwide. Filter by category, salary, and seniority — or post your own opening in minutes.</p>
         <div class="search-row">
@@ -271,11 +270,6 @@ ${mobileHeaderHtml()}
             <input type="text" class="search-input" id="searchInput" placeholder="Job title, skill, or company..." oninput="debounceSearch(this.value)">
           </div>
           <button class="search-btn" onclick="document.getElementById('searchInput').focus()">Search</button>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat"><span class="hero-stat-num" id="stat-jobs">${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : '—'}</span><span class="hero-stat-label">Active Jobs</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">${companiesCount ? companiesCount.toLocaleString() + '+' : '—'}</span><span class="hero-stat-label">Companies</span></div>
-          <div class="hero-stat"><span class="hero-stat-num">Fresh</span><span class="hero-stat-label">Every Few Hours</span></div>
         </div>
       </div>
     </div>
