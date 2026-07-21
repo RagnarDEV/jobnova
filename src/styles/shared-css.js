@@ -49,7 +49,7 @@ button{font-family:inherit}
 .mob-burger{width:36px;height:36px;border-radius:9px;border:1px solid var(--navy-border);background:rgba(255,255,255,.06);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
 .mob-menu{display:none;position:sticky;top:60px;z-index:199;background:var(--navy2);border-bottom:1px solid var(--navy-border);padding:8px;animation:slideDown .2s ease}
 .mob-menu.open{display:block}
-.mob-menu a,.mob-menu button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:9px;color:#fff;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;font-family:inherit}
+.mob-menu a,.mob-menu button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:12px 14px;border-radius:9px;color:#fff;font-size:14px;font-weight:600;border:none;background:none;cursor:pointer;font-family:inherit}
 .mob-menu a:active,.mob-menu button:active{background:rgba(255,255,255,.08)}
 @media(max-width:860px){.mob-hdr{display:flex}.nav{display:none !important}}
 
