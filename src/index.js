@@ -15,6 +15,7 @@
 import { ensureTable } from './db/schema.js';
 import { recordVisit } from './db/analytics.js';
 import { syncJobs } from './db/sync.js';
+import { cleanupStaleJobs } from './db/cleanup.js';
 import { BASE_URL } from './config/constants.js';
 
 import { handleAssetsRoute, ASSET_PATHS } from './routes/assets.router.js';
@@ -82,6 +83,14 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncJobs(env));
+    // Two cron patterns share this one handler (Cloudflare Workers only
+    // supports a single scheduled() export) — event.cron tells us which
+    // one fired. See wrangler.toml: "0 */2 * * *" for sync, "0 3 * * *"
+    // for the daily cleanup.
+    if (event.cron === '0 3 * * *') {
+      ctx.waitUntil(cleanupStaleJobs(env));
+    } else {
+      ctx.waitUntil(syncJobs(env));
+    }
   }
 };
