@@ -59,7 +59,7 @@ export default {
 
     // ── sitemap.xml / feed.rss ──
     // Use the canonical BASE_URL for feeds to ensure Google Search Console consistency
-    const feedResponse = await handleFeedRoute(url, env, BASE_URL);
+    const feedResponse = await handleFeedRoute(url, env, BASE_URL, ctx);
     if (feedResponse) return feedResponse;
 
     // ── /admin/* ──
