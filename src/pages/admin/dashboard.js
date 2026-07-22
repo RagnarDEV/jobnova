@@ -81,6 +81,16 @@ export async function renderDashboardContent(env) {
   const { results: pendingR } = await q("SELECT COUNT(*) c FROM job_postings WHERE status='pending'");
   const skillsCount = await estimateDistinctSkills(env);
 
+  // ── Job Lifecycle stats (schema.js: updated_at/expires_at/source/status) ──
+  const [{ results: activeR }, { results: expiringSoonR }, { results: deletedTodayR }, { results: sourceBreakdownR }] = await Promise.all([
+    q("SELECT COUNT(*) c FROM jobs WHERE status = 'active'"),
+    q("SELECT COUNT(*) c FROM jobs WHERE expires_at IS NOT NULL AND expires_at < datetime('now','+3 day')"),
+    q("SELECT COALESCE(SUM(deleted),0) c FROM cleanup_logs WHERE created_at >= datetime('now','-1 day')"),
+    q("SELECT COALESCE(source,'unknown') s, COUNT(*) c FROM jobs GROUP BY s ORDER BY c DESC LIMIT 12"),
+  ]);
+  const { results: cleanupLogs } = await q("SELECT * FROM cleanup_logs ORDER BY id DESC LIMIT 6");
+  const { results: lastCleanupR } = await q("SELECT created_at FROM cleanup_logs ORDER BY id DESC LIMIT 1");
+
   const { results: dailyVisits } = await q(
     "SELECT date(created_at) d, COUNT(*) c FROM visits WHERE created_at >= datetime('now','-14 day') GROUP BY d ORDER BY d ASC"
   );
@@ -144,6 +154,9 @@ export async function renderDashboardContent(env) {
   const lastSyncSummary = latestSync
     ? `${new Date(latestSync.created_at).toLocaleString()} · +${latestSync.inserted} new · ${latestErrors.length} error${latestErrors.length === 1 ? '' : 's'}`
     : 'Never run yet';
+  const lastCleanupSummary = lastCleanupR?.[0]
+    ? new Date(lastCleanupR[0].created_at).toLocaleString()
+    : 'Never run yet';
 
   const content = `
   <div class="adm-wrap">
@@ -152,9 +165,12 @@ export async function renderDashboardContent(env) {
         <div class="adm-title">📊 Dashboard</div>
         <div class="adm-sub">Live overview of JobNova performance</div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <form method="POST" action="/api/sync" onsubmit="return confirm('Run job sync now?')" style="display:inline">
           <button class="adm-btn adm-btn-primary" type="submit">↻ Sync Jobs Now</button>
+        </form>
+        <form method="POST" action="/admin/cleanup" onsubmit="return confirm('Run cleanup now? This permanently deletes expired/stale jobs.')" style="display:inline">
+          <button class="adm-btn" type="submit" style="border-color:var(--coral);color:var(--coral)">🧹 Run Cleanup Now</button>
         </form>
         <a href="/admin/logout" class="adm-btn">Logout</a>
       </div>
@@ -162,6 +178,9 @@ export async function renderDashboardContent(env) {
 
     <div class="kpi-grid">
       ${kpi('Total Jobs', (totalJobsR[0]?.c || 0).toLocaleString(), `+${jobsTodayR[0]?.c || 0} today · +${jobsWeekR[0]?.c || 0} this week`)}
+      ${kpi('Active Jobs', (activeR[0]?.c || 0).toLocaleString(), 'status = active', 'var(--green)')}
+      ${kpi('Expiring Soon', (expiringSoonR[0]?.c || 0).toLocaleString(), 'Within 3 days', 'var(--amber, #F5A623)')}
+      ${kpi('Deleted Today', (deletedTodayR[0]?.c || 0).toLocaleString(), 'By daily cleanup job', 'var(--coral)')}
       ${kpi('This Month', (jobsMonthR[0]?.c || 0).toLocaleString(), 'New jobs, last 30 days', 'var(--brand2)')}
       ${kpi('Featured / Hot', (hotR[0]?.c || 0).toLocaleString(), 'Salary ≥ $150k', 'var(--pink)')}
       ${kpi('Pending Postings', (pendingR[0]?.c || 0).toLocaleString(), 'Awaiting review', 'var(--coral)')}
@@ -198,6 +217,10 @@ export async function renderDashboardContent(env) {
         <div class="health-row" style="border-bottom:none">
           <span class="adm-row-label">Last sync</span>
           <span class="adm-row-val" style="font-weight:600">${lastSyncSummary}</span>
+        </div>
+        <div class="health-row" style="border-bottom:none">
+          <span class="adm-row-label">Last cleanup</span>
+          <span class="adm-row-val" style="font-weight:600">${lastCleanupSummary}</span>
         </div>
       </div>
       <div class="adm-card" style="grid-column:span 2">
@@ -242,6 +265,26 @@ export async function renderDashboardContent(env) {
             </div>` : ''}
           </div>`;
         }).join('') : '<div class="adm-empty">No sync runs yet</div>'}
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Jobs by Source</div>
+        ${(sourceBreakdownR || []).length ? barChart(sourceBreakdownR.map(r => ({ label: r.s, count: r.c }))) : '<div class="adm-empty">No source data yet — runs after the next sync</div>'}
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Recent Cleanup History <span style="font-weight:400;color:var(--ink3);font-size:12px">— daily, 03:00 UTC</span></div>
+        ${(cleanupLogs || []).length ? cleanupLogs.map(c => {
+          let breakdown = {};
+          try { breakdown = JSON.parse(c.reason_breakdown || '{}'); } catch (e) {}
+          const when = c.created_at ? new Date(c.created_at).toLocaleString() : '—';
+          return `<div class="adm-row" style="align-items:flex-start;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;width:100%">
+              <span class="adm-row-label" style="font-size:11px">${when}</span>
+              <span class="adm-row-val" style="color:var(--coral)">−${c.deleted || 0}</span>
+            </div>
+            ${(breakdown.expired || breakdown.stale_30d) ? `<div style="font-size:10px;color:var(--ink3)">expired: ${breakdown.expired || 0} · stale 30d+: ${breakdown.stale_30d || 0}</div>` : ''}
+            ${breakdown.error ? `<div style="font-size:10px;color:var(--coral)">⚠ ${escapeHtml(breakdown.error)}</div>` : ''}
+          </div>`;
+        }).join('') : '<div class="adm-empty">No cleanup runs yet</div>'}
       </div>
     </div>
 
