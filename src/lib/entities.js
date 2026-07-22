@@ -78,9 +78,21 @@ export function slugify(str) {
 }
 
 // ── Companies ──────────────────────────────────────────────────
+// PERFORMANCE: bounded to the most recent 8000 jobs rather than scanning the
+// entire (ever-growing) jobs table. An unbounded GROUP BY over the full
+// table gets slower every day as more jobs sync in, and this query runs on
+// EVERY /companies page load AND every /sitemap.xml request — left
+// unbounded, it eventually gets slow enough that Googlebot's sitemap fetch
+// times out, which Search Console reports as "couldn't fetch sitemap" even
+// though the file is perfectly valid. Sampling the most recent jobs (via
+// the indexed `id` column, so this stays fast regardless of table size) is
+// more than sufficient for a "top companies" listing — a company with no
+// jobs in the last 8000 postings isn't meaningfully "active" anyway.
 export async function listCompanies(env, { limit = 200 } = {}) {
   const { results } = await env.DB.prepare(
-    `SELECT company, COUNT(*) c FROM jobs WHERE company IS NOT NULL AND company != '' GROUP BY company ORDER BY c DESC LIMIT ?`
+    `SELECT company, COUNT(*) c FROM (
+       SELECT company FROM jobs WHERE company IS NOT NULL AND company != '' ORDER BY id DESC LIMIT 8000
+     ) GROUP BY company ORDER BY c DESC LIMIT ?`
   ).bind(limit).all();
   return (results || []).map(r => ({ name: r.company, slug: slugify(r.company), count: r.c }));
 }
@@ -165,11 +177,18 @@ export async function jobsByCity(env, cityName, { limit = 100 } = {}) {
 }
 
 // ── Skills (parsed from the jobs.skills JSON column via SQLite json_each) ─
+// PERFORMANCE: same bounding rationale as listCompanies() above — this
+// query is the single most expensive one in the whole codebase (a
+// json_each cross join over every job row), and it used to run unbounded
+// on every /skills page load and every /sitemap.xml request. Bounding to
+// the most recent 5000 jobs (same sample size already used for the admin
+// dashboard's skill-count estimate) keeps it fast at any table size.
 export async function listSkills(env, { limit = 200 } = {}) {
   try {
     const { results } = await env.DB.prepare(
-      `SELECT value AS skill, COUNT(*) c FROM jobs, json_each(jobs.skills)
-       WHERE jobs.skills IS NOT NULL AND jobs.skills != '' AND jobs.skills != '[]'
+      `SELECT value AS skill, COUNT(*) c FROM (
+         SELECT skills FROM jobs WHERE skills IS NOT NULL AND skills != '' AND skills != '[]' ORDER BY id DESC LIMIT 5000
+       ), json_each(skills)
        GROUP BY value ORDER BY c DESC LIMIT ?`
     ).bind(limit).all();
     return (results || []).map(r => ({ name: r.skill, slug: slugify(r.skill), count: r.c })).filter(s => s.name);

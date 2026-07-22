@@ -27,25 +27,30 @@ export async function buildSitemapXml(env, base, { blogPosts = [], categoryOrder
   // categories (static list, cheap)
   for (const key of categoryOrder) add(`${base}/categories/${key}`, { changefreq: 'daily', priority: '0.65' });
 
-  // jobs (bounded to most recent 1000 to keep the sitemap fast/small —
-  // additional jobs are still reachable via the paginated /companies,
-  // /categories etc. pages, satisfying crawl-discoverability)
-  try {
-    const { results } = await env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all();
-    for (const j of results || []) {
+  // jobs / companies / skills queries are all independent — run them in
+  // parallel instead of sequentially awaiting each one. This alone can cut
+  // the endpoint's total wall-clock time roughly in half to a third,
+  // which matters because a slow-but-eventually-successful response is
+  // exactly what causes crawlers (which apply their own fetch timeouts)
+  // to report "couldn't fetch" even though a browser, given enough time,
+  // would eventually see a valid file.
+  const [jobsResult, companiesResult, skillsResult] = await Promise.allSettled([
+    env.DB.prepare("SELECT id,created_at FROM jobs ORDER BY id DESC LIMIT 1000").all(),
+    listCompanies(env, { limit: 500 }),
+    listSkills(env, { limit: 300 }),
+  ]);
+
+  if (jobsResult.status === 'fulfilled') {
+    for (const j of jobsResult.value.results || []) {
       add(`${base}/job/${j.id}`, { changefreq: 'weekly', priority: '0.6', lastmod: new Date(j.created_at || Date.now()).toISOString().split('T')[0] });
     }
-  } catch (e) {}
-
-  // companies / skills (bounded — same rationale as jobs above)
-  try {
-    const companies = await listCompanies(env, { limit: 500 });
-    for (const c of companies) add(`${base}/companies/${c.slug}`, { changefreq: 'weekly', priority: '0.55' });
-  } catch (e) {}
-  try {
-    const skills = await listSkills(env, { limit: 300 });
-    for (const s of skills) add(`${base}/skills/${s.slug}`, { changefreq: 'weekly', priority: '0.5' });
-  } catch (e) {}
+  }
+  if (companiesResult.status === 'fulfilled') {
+    for (const c of companiesResult.value) add(`${base}/companies/${c.slug}`, { changefreq: 'weekly', priority: '0.55' });
+  }
+  if (skillsResult.status === 'fulfilled') {
+    for (const s of skillsResult.value) add(`${base}/skills/${s.slug}`, { changefreq: 'weekly', priority: '0.5' });
+  }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
