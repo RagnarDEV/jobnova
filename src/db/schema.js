@@ -126,5 +126,34 @@ export async function ensureTable(env) {
     )
   `).run();
 
+  // ── Job Lifecycle Management ──────────────────────────────────
+  // updated_at: bumped on every successful sync touch (new insert OR
+  // refresh of an existing row) — this is what "not updated in 30 days"
+  // cleanup keys off, not created_at, so a job that's still present at the
+  // source keeps getting its clock reset indefinitely.
+  await ensureColumn(env, 'jobs', 'updated_at', 'DATETIME');
+  // expires_at: none of the 9 providers send a real expiry date, so this
+  // is computed by us at insert time (created_at + 45 days) as a
+  // best-effort default rather than authoritative source data.
+  await ensureColumn(env, 'jobs', 'expires_at', 'DATETIME');
+  // source: which provider this job came from (arbeitnow, greenhouse, ...)
+  // — lets the stats dashboard and cleanup logic reason per-provider.
+  await ensureColumn(env, 'jobs', 'source', 'TEXT');
+  // status: 'active' | 'expired' | 'deleted'. Rows are only ever hard-deleted
+  // by the daily cleanup cron; this column exists so a job disappearing
+  // from the public site (status != 'active') and a job being physically
+  // removed from D1 are two independently reasoned-about steps.
+  await ensureColumn(env, 'jobs', 'status', "TEXT DEFAULT 'active'");
+
+  // Daily cleanup run history — mirrors sync_logs's shape so the future
+  // stats dashboard can reuse the same rendering pattern for both.
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS cleanup_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      deleted INTEGER, reason_breakdown TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
   schemaEnsured = true;
 }

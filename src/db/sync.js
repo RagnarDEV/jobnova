@@ -129,16 +129,21 @@ function createErrorLog() {
   };
 }
 
-// Dedup key is the unique `url` column — INSERT OR IGNORE never creates
-// duplicates and never touches existing rows.
-// Saves jobs in small batches via env.DB.batch() instead of one D1 call per
-// job. This matters a lot: Cloudflare Workers caps the total number of
-// subrequests (fetch calls + D1 queries combined) allowed within a single
-// Worker invocation. A provider returning 200+ jobs used to mean 200+
-// individual D1 round trips, which alone could blow through that limit
-// before other providers even got a turn — that's what was silently
-// starving arbeitnow/linkedin_rapidapi of subrequest budget. batch()
-// executes many statements as ONE subrequest.
+// Dedup key is the unique `url` column. Saving now happens in two phases
+// per batch chunk instead of a single INSERT OR IGNORE:
+//   Phase 1 — INSERT OR IGNORE the jobs that are genuinely new. changes>0
+//   here is the ONLY source of the "inserted" counter, kept precise.
+//   Phase 2 — UPDATE every job in the chunk that phase 1 did NOT insert
+//   (i.e. it already existed) — refreshes mutable fields and, critically,
+//   bumps updated_at/expires_at and revives status back to 'active'. This
+//   is what makes the 30-day-stale cleanup job trustworthy: a job that's
+//   still being returned by its source keeps its clock reset on every
+//   sync, so only jobs the source has genuinely stopped sending age out.
+//
+// Both phases still use env.DB.batch() (one subrequest per chunk per
+// phase, regardless of chunk size) — Cloudflare Workers caps the total
+// number of subrequests per invocation, and one D1 call per individual
+// job would blow through that budget long before a provider finished.
 const DB_BATCH_SIZE = 25;
 
 async function saveJobs(env, jobs, counters, errorLog, providerId) {
@@ -147,24 +152,48 @@ async function saveJobs(env, jobs, counters, errorLog, providerId) {
 
   for (let i = 0; i < validJobs.length; i += DB_BATCH_SIZE) {
     const chunk = validJobs.slice(i, i + DB_BATCH_SIZE);
-    const stmts = chunk.map((j) =>
+
+    const insertStmts = chunk.map((j) =>
       env.DB.prepare(
-        `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+        `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle,source,status,updated_at,expires_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'active',CURRENT_TIMESTAMP,datetime('now','+45 days'))`
       ).bind(
         j.title || 'Unknown', j.company || 'Company', j.location || '', j.url,
         j.description || '', j.salary || '', j.remote_type || '',
-        JSON.stringify(j.skills || []), j.seniority || '', j.employment_type || '', j.job_handle || ''
+        JSON.stringify(j.skills || []), j.seniority || '', j.employment_type || '', j.job_handle || '',
+        providerId
       )
     );
+
+    const insertedUrls = new Set();
     try {
-      const results = await env.DB.batch(stmts);
-      for (const r of results) {
-        if (r.meta?.changes > 0) counters.inserted++; else counters.skipped++;
-      }
+      const results = await env.DB.batch(insertStmts);
+      results.forEach((r, idx) => {
+        if (r.meta?.changes > 0) { counters.inserted++; insertedUrls.add(chunk[idx].url); }
+      });
     } catch (e) {
-      errorLog.add(providerId, `DB batch: ${e.message.slice(0, 60)}`);
-      counters.skipped += chunk.length;
+      errorLog.add(providerId, `DB insert: ${e.message.slice(0, 60)}`);
+      continue; // phase 1 itself failed for this chunk — skip phase 2 too
+    }
+
+    const toUpdate = chunk.filter((j) => !insertedUrls.has(j.url));
+    if (toUpdate.length) {
+      const updateStmts = toUpdate.map((j) =>
+        env.DB.prepare(
+          `UPDATE jobs SET title=?,company=?,location=?,description=?,salary=?,remote_type=?,skills=?,seniority=?,employment_type=?,job_handle=?,source=?,status='active',updated_at=CURRENT_TIMESTAMP,expires_at=datetime('now','+45 days') WHERE url=?`
+        ).bind(
+          j.title || 'Unknown', j.company || 'Company', j.location || '',
+          j.description || '', j.salary || '', j.remote_type || '',
+          JSON.stringify(j.skills || []), j.seniority || '', j.employment_type || '', j.job_handle || '',
+          providerId, j.url
+        )
+      );
+      try {
+        const results = await env.DB.batch(updateStmts);
+        results.forEach((r) => { if (r.meta?.changes > 0) counters.updated++; });
+      } catch (e) {
+        errorLog.add(providerId, `DB update: ${e.message.slice(0, 60)}`);
+      }
     }
   }
 }
@@ -185,12 +214,12 @@ export async function syncJobs(env) {
     const bCheap = PROVIDERS[b.provider]?.ignoresQuery ? 0 : 1;
     return aCheap - bCheap;
   });
-  const counters = { inserted: 0, skipped: 0 };
+  const counters = { inserted: 0, updated: 0, skipped: 0 };
   const errorLog = createErrorLog();
   const providerStats = [];
 
   if (!sources.length) {
-    const result = { inserted: 0, skipped: 0, errors: ['No API key configured'] };
+    const result = { inserted: 0, updated: 0, skipped: 0, errors: ['No API key configured'] };
     await logSync(env, result);
     return result;
   }
@@ -230,7 +259,7 @@ export async function syncJobs(env) {
     });
   }
 
-  const result = { inserted: counters.inserted, skipped: counters.skipped, errors: errorLog.toArray(), providerStats };
+  const result = { inserted: counters.inserted, updated: counters.updated, skipped: counters.skipped, errors: errorLog.toArray(), providerStats };
   await logSync(env, result);
   return result;
 }
