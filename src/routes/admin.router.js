@@ -13,6 +13,7 @@
 import { makeAdminCookie, verifyAdminCookie } from '../auth/admin-auth.js';
 import { renderAdminLogin, renderAdminDashboard } from '../pages/admin.js';
 import { insertApiSource } from '../db/sync.js';
+import { cleanupStaleJobs } from '../db/cleanup.js';
 import { renderJobsListContent, renderJobEditContent, renderDuplicatesContent } from '../pages/admin/jobs.js';
 import { adminShell } from '../pages/admin/shell.js';
 
@@ -94,8 +95,8 @@ export async function handleAdminRoute(url, request, env, base) {
         if (p) {
           try {
             await env.DB.prepare(
-              `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+              `INSERT OR IGNORE INTO jobs (title,company,location,url,description,salary,remote_type,skills,seniority,employment_type,job_handle,source,status,updated_at,expires_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,'manual','active',CURRENT_TIMESTAMP,datetime('now','+45 days'))`
             ).bind(p.title, p.company, p.location || 'Remote', p.url, p.description || '', p.salary || '', p.remote_type || 'fully_remote', '[]', '', p.employment_type || 'full_time', '').run();
             await env.DB.prepare("UPDATE job_postings SET status='approved' WHERE id = ?").bind(id).run();
           } catch (e) { /* keep posting pending rather than crash the whole request */ }
@@ -206,6 +207,15 @@ export async function handleAdminRoute(url, request, env, base) {
       const days = Math.max(7, parseInt(form.get('days') || '45', 10) || 45);
       const r = await env.DB.prepare(`DELETE FROM jobs WHERE created_at < datetime('now', '-' || ? || ' day')`).bind(days).run();
       return new Response(null, { status: 302, headers: { 'Location': `/admin/jobs?flash=${encodeURIComponent(`Deleted ${r.meta?.changes || 0} stale jobs`)}` } });
+    } catch (e) { return errorPage(e); }
+  }
+
+  if (url.pathname === '/admin/cleanup' && request.method === 'POST') {
+    try {
+      const ok = await verifyAdminCookie(env, request.headers.get('Cookie'));
+      if (!ok) return new Response('Unauthorized', { status: 401 });
+      const result = await cleanupStaleJobs(env);
+      return new Response(null, { status: 302, headers: { 'Location': `/admin?flash=${encodeURIComponent(`Cleanup ran — deleted ${result.deleted} jobs`)}` } });
     } catch (e) { return errorPage(e); }
   }
 
