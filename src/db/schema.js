@@ -22,7 +22,19 @@ async function ensureColumn(env, table, column, definition) {
   }
 }
 
+// PERFORMANCE: ensureTable() used to run its full set of CREATE TABLE +
+// PRAGMA-based column checks (17 D1 round-trips) on EVERY single request to
+// the entire site — including /sitemap.xml, which made an already-slow
+// endpoint even slower. The schema only actually changes across a
+// deployment, not between requests, so this in-memory flag makes the real
+// checks run once per Worker isolate (isolates are reused across many
+// requests) instead of once per request. A fresh isolate (cold start, or
+// after a new deploy) simply re-runs the cheap idempotent checks once —
+// still fully self-healing, just no longer wastefully repeated.
+let schemaEnsured = false;
+
 export async function ensureTable(env) {
+  if (schemaEnsured) return;
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,4 +125,6 @@ export async function ensureTable(env) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
+
+  schemaEnsured = true;
 }
