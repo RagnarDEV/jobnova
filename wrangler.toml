@@ -15,4 +15,4 @@ database_id = "58e366ac-f5d4-4da5-b23f-0aa2e4208866"
 # "0 */2 * * *"  -> syncJobs()        every 2 hours
 # "0 3 * * *"    -> cleanupStaleJobs() once daily at 03:00 UTC
 [triggers]
-crons = ["0 */2 * * *", "0 3 * * *"]
+crons = ["0 */6 * * *", "0 3 * * *"]
