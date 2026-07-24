@@ -10,7 +10,7 @@
 // than silently duplicating the homepage's tags.
 // ════════════════════════════════════════════════════════════════
 
-const SITE_NAME = "JobNova";
+const SITE_NAME = "JobForion";
 const DEFAULT_OG_IMAGE_PATH = "/icon-512.png";
 
 function safe(str, fallbackFlag) {
@@ -27,7 +27,7 @@ export function buildMeta({
   robots = "index, follow",
   type = "website",
   keywords,
-  author = "JobNova",
+  author = "JobForion",
   themeColor = "#3556FF",
 } = {}) {
   const safeTitle = safe(title, "[MISSING TITLE — fix call site]");

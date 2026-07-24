@@ -1,6 +1,6 @@
 // src/providers/adzuna.js
 // Provider: Adzuna Jobs API. Adzuna requires TWO credentials (app_id and
-// app_key), but JobNova's api_sources table stores one key field per row —
+// app_key), but JobForion's api_sources table stores one key field per row —
 // so for this provider, paste both joined by a colon: "app_id:app_key".
 export const id = 'adzuna';
 export const needsKey = true;

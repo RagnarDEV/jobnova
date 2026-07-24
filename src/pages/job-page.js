@@ -25,7 +25,7 @@ export function renderJobPage(job, related, base) {
   const cleanDesc = cleanDescription(job.description);
   const desc = cleanDesc.length > 20
     ? cleanDesc.slice(0, 160).replace(/\n/g, ' ') + '...'
-    : `${job.title} at ${job.company}. ${job.location || 'Remote'}${job.salary ? ' — ' + job.salary : ''}. Apply on JobNova.`;
+    : `${job.title} at ${job.company}. ${job.location || 'Remote'}${job.salary ? ' — ' + job.salary : ''}. Apply on JobForion.`;
   const schema = safeJsonLd({
     "@context": "https://schema.org", "@type": "JobPosting",
     "title": job.title, "description": cleanDesc || desc,
@@ -40,14 +40,14 @@ export function renderJobPage(job, related, base) {
   const breadcrumbSchema = safeJsonLd({
     "@context": "https://schema.org", "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "JobNova", "item": base },
+      { "@type": "ListItem", "position": 1, "name": "JobForion", "item": base },
       { "@type": "ListItem", "position": 2, "name": "Jobs", "item": base + "/" },
       { "@type": "ListItem", "position": 3, "name": job.title, "item": canonical }
     ]
   });
   const content = `
 <div class="page">
-  <div class="breadcrumb"><a href="/">JobNova</a><span>›</span><a href="/">Jobs</a><span>›</span><span>${escapeHtml(job.title)}</span></div>
+  <div class="breadcrumb"><a href="/">JobForion</a><span>›</span><a href="/">Jobs</a><span>›</span><span>${escapeHtml(job.title)}</span></div>
   <div class="job-hero">
     <div class="job-hero-hdr">
       <div class="job-co-row">
@@ -128,5 +128,5 @@ export function renderJobPage(job, related, base) {
   refreshBtn();
 })();
 </script>`;
-  return baseLayout(`${job.title} at ${job.company} — JobNova`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`);
+  return baseLayout(`${job.title} at ${job.company} — JobForion`, desc, canonical, '', content, `<script type="application/ld+json">${schema}</script><script type="application/ld+json">${breadcrumbSchema}</script>`);
 }

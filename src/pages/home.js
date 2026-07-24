@@ -67,7 +67,7 @@ export async function renderMainHTML(env, base) {
   });
   const orgSchema = JSON.stringify({
     "@context": "https://schema.org", "@type": "Organization",
-    "name": "JobNova", "url": base, "logo": `${base}/icon-512.png`
+    "name": "JobForion", "url": base, "logo": `${base}/icon-512.png`
   });
 
   const ssrJobsHtml = initialJobs.length
@@ -80,20 +80,20 @@ export async function renderMainHTML(env, base) {
 <meta charset="UTF-8">
 <meta name="google-site-verification" content="7Q0EJk3kQKNLNzIhyzH4k5CsuHsQEa-U0Pwp_w_b0n0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobNova — Find Your Next Remote Job</title>
-<meta name="description" content="JobNova is a curated remote job board with ${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : ''} verified positions in development, design, marketing, data and more. Updated every few hours.">
+<title>JobForion — Find Your Next Remote Job</title>
+<meta name="description" content="JobForion is a curated remote job board with ${totalJobsCount ? totalJobsCount.toLocaleString() + '+' : ''} verified positions in development, design, marketing, data and more. Updated every few hours.">
 <meta name="robots" content="index, follow">
 ${ICON_HEAD}
-<meta property="og:title" content="JobNova — Find Your Next Remote Job">
+<meta property="og:title" content="JobForion — Find Your Next Remote Job">
 <meta property="og:description" content="Curated remote jobs updated every few hours. Browse, save, and get alerted — or post your own opening.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${base}">
-<meta property="og:site_name" content="JobNova">
+<meta property="og:site_name" content="JobForion">
 <meta property="og:image" content="${base}/icon-512.png">
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="${base}">
-<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="${base}/feed.rss">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"JobNova","url":"${base}","potentialAction":{"@type":"SearchAction","target":"${base}/?search={search_term_string}","query-input":"required name=search_term_string"}}</script>
+<link rel="alternate" type="application/rss+xml" title="JobForion Jobs Feed" href="${base}/feed.rss">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"JobForion","url":"${base}","potentialAction":{"@type":"SearchAction","target":"${base}/?search={search_term_string}","query-input":"required name=search_term_string"}}</script>
 <script type="application/ld+json">${orgSchema}</script>
 <script type="application/ld+json">${itemListSchema}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">

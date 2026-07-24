@@ -32,7 +32,7 @@ export function handleAssetsRoute(url, base) {
   }
   if (url.pathname === '/robots.txt') {
     // Use BASE_URL for sitemap location to ensure consistency
-    const robots = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: https://jobnova.sryze.cc/sitemap.xml`;
+    const robots = `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: https://jobforion.manasa.workers.dev/sitemap.xml`;
     return new Response(robots, { headers: { "Content-Type": "text/plain", "Cache-Control": "public, max-age=86400" } });
   }
   return null;

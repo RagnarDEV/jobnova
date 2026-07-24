@@ -93,7 +93,7 @@ const SHELL_SCRIPT = `
 export function adminShell(activeId, content) {
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — JobNova</title><meta name="robots" content="noindex, nofollow">${ICON_HEAD}
+<title>Admin — JobForion</title><meta name="robots" content="noindex, nofollow">${ICON_HEAD}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>${SHARED_CSS}${DARK_THEME_CSS}${SHELL_CSS}
@@ -133,7 +133,7 @@ export function adminShell(activeId, content) {
 <div id="toast-host"></div>
 <div class="adm-shell">
   <aside class="adm-sidebar">
-    <div class="adm-logo"><img src="/favicon.svg" alt="JobNova">JobNova</div>
+    <div class="adm-logo"><img src="/favicon.svg" alt="JobForion">JobForion</div>
     ${NAV_ITEMS.map(n => `<a href="${n.href}" class="adm-nav-link${n.id === activeId ? ' active' : ''}">${n.icon} ${n.label}</a>`).join('')}
   </aside>
   <main class="adm-main">

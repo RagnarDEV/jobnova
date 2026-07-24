@@ -14,7 +14,7 @@ export function renderStaticPage(key, base) {
   <div class="static-body">${page.body}</div>
   <div style="margin-top:32px"><a href="/" class="back-link" style="margin-bottom:0">← Back to Jobs</a></div>
 </div>`;
-  return baseLayout(`${page.title} — JobNova`, page.description, `${base}/${key}`, '', content);
+  return baseLayout(`${page.title} — JobForion`, page.description, `${base}/${key}`, '', content);
 }
 
 // ══════════════════════════════════════════════════════════════════

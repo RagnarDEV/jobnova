@@ -6,7 +6,7 @@ import { iconSearch, iconBuilding, iconFolder, iconBookmark, iconFileText, iconP
 export function navHtml() {
   return `
 <nav class="nav">
-  <a href="/" class="nav-logo"><img src="/favicon.svg" alt="JobNova"><span>JobNova</span><span class="dot"></span></a>
+  <a href="/" class="nav-logo"><img src="/favicon.svg" alt="JobForion"><span>JobForion</span><span class="dot"></span></a>
   <div class="nav-links">
     <a href="/" class="nav-link">Browse Jobs</a>
     <a href="/companies" class="nav-link">Companies</a>
@@ -21,7 +21,7 @@ export function navHtml() {
 export function mobileHeaderHtml() {
   return `
 <div class="mob-hdr">
-  <a href="/" class="mob-logo"><img src="/favicon.svg" alt="JobNova">JobNova</a>
+  <a href="/" class="mob-logo"><img src="/favicon.svg" alt="JobForion">JobForion</a>
   <div class="mob-btns">
     <button class="mob-cta" onclick="openPostJobModal()">+ Post</button>
     <button class="mob-burger" onclick="toggleMobMenu()" id="mobBurgerBtn">${iconMenu({ size: 18 })}</button>

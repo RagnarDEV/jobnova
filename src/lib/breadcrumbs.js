@@ -21,7 +21,7 @@ export function breadcrumbJsonLd(trail) {
 // Convenience: build both HTML + schema from a base + list of
 // {name, path} where path is site-relative (e.g. "/companies/google")
 export function buildBreadcrumb(base, segments) {
-  const trail = [{ name: 'JobNova', href: '/', url: base }].concat(
+  const trail = [{ name: 'JobForion', href: '/', url: base }].concat(
     segments.map(s => ({ name: s.name, href: s.path, url: base + s.path }))
   );
   return { html: breadcrumbHtml(trail), jsonLd: breadcrumbJsonLd(trail) };

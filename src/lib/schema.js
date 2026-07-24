@@ -12,7 +12,7 @@ export function ldJsonTag(obj) {
 export function websiteSchema(base) {
   return {
     "@context": "https://schema.org", "@type": "WebSite",
-    "name": "JobNova", "url": base,
+    "name": "JobForion", "url": base,
     "potentialAction": {
       "@type": "SearchAction",
       "target": `${base}/search/{search_term_string}`,
@@ -24,7 +24,7 @@ export function websiteSchema(base) {
 export function organizationSchema(base) {
   return {
     "@context": "https://schema.org", "@type": "Organization",
-    "name": "JobNova", "url": base, "logo": `${base}/icon-512.png`
+    "name": "JobForion", "url": base, "logo": `${base}/icon-512.png`
   };
 }
 
@@ -48,7 +48,7 @@ export function articleSchema(post, base) {
   return {
     "@context": "https://schema.org", "@type": "Article",
     "headline": post.title, "description": post.excerpt,
-    "datePublished": post.date, "author": { "@type": "Organization", "name": "JobNova" },
+    "datePublished": post.date, "author": { "@type": "Organization", "name": "JobForion" },
     "url": `${base}/blog/${post.id}`
   };
 }

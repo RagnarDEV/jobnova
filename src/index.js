@@ -1,6 +1,6 @@
 // src/index.js
 // ════════════════════════════════════════════════════════════════
-// JobNova — Cloudflare Worker entry point
+// JobForion — Cloudflare Worker entry point
 //
 // This file is intentionally thin: it owns request-level concerns only
 // (table bootstrap, visitor tracking, router dispatch order) and delegates
@@ -33,7 +33,7 @@ const NON_TRACKED_STATIC_PATHS = new Set([...ASSET_PATHS, '/sitemap.xml', '/feed
 // actually forwards visitors — not just that it's abandoned — and it also
 // prevents duplicate-content indexing if the old host is ever reachable
 // again. Add any other retired hostnames to this set as domains change.
-const RETIRED_HOSTS = new Set(['jobnova.manasa.workers.dev']);
+const RETIRED_HOSTS = new Set(['jobnova.manasa.workers.dev', 'jobnova.sryze.cc']);
 
 export default {
   async fetch(request, env, ctx) {

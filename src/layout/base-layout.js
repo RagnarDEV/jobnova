@@ -34,11 +34,11 @@ ${ICON_HEAD}
 <meta property="og:description" content="${safeDescription}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="${canonical}">
-<meta property="og:site_name" content="JobNova">
+<meta property="og:site_name" content="JobForion">
 ${ogImage ? `<meta property="og:image" content="${ogImage}">` : `<meta property="og:image" content="${BASE_URL}/icon-512.png">`}
 <meta name="twitter:card" content="summary">
 <link rel="canonical" href="${canonical}">
-<link rel="alternate" type="application/rss+xml" title="JobNova Jobs Feed" href="${BASE_URL}/feed.rss">
+<link rel="alternate" type="application/rss+xml" title="JobForion Jobs Feed" href="${BASE_URL}/feed.rss">
 ${extraHead}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

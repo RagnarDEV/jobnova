@@ -1,5 +1,5 @@
 // src/providers/jobdatalake.js
-// Provider: JobDataLake (api.jobdatalake.com) — JobNova's original source.
+// Provider: JobDataLake (api.jobdatalake.com) — JobForion's original source.
 // Contract: fetchJobs(ctx) -> Promise<UnifiedJob[]>. Never writes to the DB.
 export const id = 'jobdatalake';
 export const needsKey = true;

@@ -70,8 +70,8 @@ export async function handleFeedRoute(url, env, base, ctx) {
         <category>Article</category>
       </item>`).join('');
     return new Response(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-<channel><title>JobNova — Remote Jobs &amp; Career Advice</title><link>${base}</link>
-<description>Latest remote job listings and career articles from JobNova</description>
+<channel><title>JobForion — Remote Jobs &amp; Career Advice</title><link>${base}</link>
+<description>Latest remote job listings and career articles from JobForion</description>
 <atom:link href="${base}/feed.rss" rel="self" type="application/rss+xml"/>
 ${jobItems}${articleItems}</channel></rss>`, { headers: { "Content-Type": "application/rss+xml" } });
   }

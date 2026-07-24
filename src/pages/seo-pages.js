@@ -22,8 +22,8 @@ export function renderCategoriesIndex(base) {
       </a>`).join('')}
     </div>
   </div>`;
-  const schema = ldJsonTag(collectionPageSchema('Job Categories — JobNova', 'Browse remote jobs by category.', `${base}/categories`));
-  return baseLayout('Browse Remote Jobs by Category — JobNova', 'Explore curated remote job listings grouped by discipline: development, design, marketing, data, DevOps, management and writing.', `${base}/categories`, '', content, schema + bcSchema);
+  const schema = ldJsonTag(collectionPageSchema('Job Categories — JobForion', 'Browse remote jobs by category.', `${base}/categories`));
+  return baseLayout('Browse Remote Jobs by Category — JobForion', 'Explore curated remote job listings grouped by discipline: development, design, marketing, data, DevOps, management and writing.', `${base}/categories`, '', content, schema + bcSchema);
 }
 
 export async function renderCategoryDetail(env, base, key) {
@@ -36,9 +36,9 @@ export async function renderCategoryDetail(env, base, key) {
     <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${(results || []).length} open remote ${meta.label.toLowerCase()} positions, updated hourly.</p>
     <div class="related-grid">${(results || []).map(jobRowMini).join('') || '<div class="empty"><div class="e-icon">📭</div><h3>No jobs in this category yet</h3></div>'}</div>
   </div>`;
-  const desc = truncateDescription(`Browse ${(results || []).length} remote ${meta.label.toLowerCase()} jobs updated hourly. Filter by seniority, salary, and location on JobNova.`);
+  const desc = truncateDescription(`Browse ${(results || []).length} remote ${meta.label.toLowerCase()} jobs updated hourly. Filter by seniority, salary, and location on JobForion.`);
   const schema = ldJsonTag(itemListSchema((results || []).slice(0, 20).map(j => ({ url: `${base}/job/${j.id}` }))));
-  return baseLayout(`${meta.label} Remote Jobs — JobNova`, desc, `${base}/categories/${key}`, '', content, schema + bcSchema);
+  return baseLayout(`${meta.label} Remote Jobs — JobForion`, desc, `${base}/categories/${key}`, '', content, schema + bcSchema);
 }
 
 // ── /companies ──
@@ -47,11 +47,11 @@ export async function renderCompaniesIndex(env, base) {
   const { html: bc, jsonLd: bcSchema } = buildBreadcrumb(base, [{ name: 'Companies', path: '/companies' }]);
   const content = `<div class="page">${bc}
     <h1 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:8px;color:var(--ink)">Companies Hiring Remotely</h1>
-    <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${companies.length} companies with active remote listings on JobNova.</p>
+    <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${companies.length} companies with active remote listings on JobForion.</p>
     ${directoryGridHtml(companies, '/companies')}
   </div>`;
-  const schema = ldJsonTag(collectionPageSchema('Companies Hiring Remotely — JobNova', 'Directory of companies with active remote job listings.', `${base}/companies`));
-  return baseLayout('Companies Hiring Remotely — JobNova', `Browse ${companies.length} companies with active remote job openings, updated hourly on JobNova.`, `${base}/companies`, '', content, schema + bcSchema);
+  const schema = ldJsonTag(collectionPageSchema('Companies Hiring Remotely — JobForion', 'Directory of companies with active remote job listings.', `${base}/companies`));
+  return baseLayout('Companies Hiring Remotely — JobForion', `Browse ${companies.length} companies with active remote job openings, updated hourly on JobForion.`, `${base}/companies`, '', content, schema + bcSchema);
 }
 
 export async function renderCompanyDetail(env, base, slug) {
@@ -67,9 +67,9 @@ export async function renderCompanyDetail(env, base, slug) {
     <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${jobs.length} open remote position${jobs.length === 1 ? '' : 's'} at ${company.name}, sourced from verified listings.</p>
     <div class="related-grid">${jobs.map(jobRowMini).join('') || '<div class="empty"><div class="e-icon">📭</div><h3>No open jobs right now</h3></div>'}</div>
   </div>`;
-  const desc = truncateDescription(`${company.name} has ${jobs.length} open remote job${jobs.length === 1 ? '' : 's'} on JobNova. Browse roles and apply directly with the employer.`);
+  const desc = truncateDescription(`${company.name} has ${jobs.length} open remote job${jobs.length === 1 ? '' : 's'} on JobForion. Browse roles and apply directly with the employer.`);
   const schema = ldJsonTag({ "@context": "https://schema.org", "@type": "Organization", "name": company.name, "url": `${base}/companies/${slug}` });
-  return baseLayout(`Remote Jobs at ${company.name} — JobNova`, desc, `${base}/companies/${slug}`, '', content, schema + bcSchema);
+  return baseLayout(`Remote Jobs at ${company.name} — JobForion`, desc, `${base}/companies/${slug}`, '', content, schema + bcSchema);
 }
 
 // ── /skills ──
@@ -81,8 +81,8 @@ export async function renderSkillsIndex(env, base) {
     <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${skills.length} in-demand skills across current listings.</p>
     ${directoryGridHtml(skills, '/skills')}
   </div>`;
-  const schema = ldJsonTag(collectionPageSchema('Skills — JobNova', 'Browse remote jobs by required skill.', `${base}/skills`));
-  return baseLayout('Browse Remote Jobs by Skill — JobNova', `Explore ${skills.length} in-demand skills across current remote job listings on JobNova.`, `${base}/skills`, '', content, schema + bcSchema);
+  const schema = ldJsonTag(collectionPageSchema('Skills — JobForion', 'Browse remote jobs by required skill.', `${base}/skills`));
+  return baseLayout('Browse Remote Jobs by Skill — JobForion', `Explore ${skills.length} in-demand skills across current remote job listings on JobForion.`, `${base}/skills`, '', content, schema + bcSchema);
 }
 
 export async function renderSkillDetail(env, base, slug) {
@@ -95,9 +95,9 @@ export async function renderSkillDetail(env, base, slug) {
     <p style="color:var(--ink2);font-size:14px;margin-bottom:24px">${jobs.length} open remote positions listing ${skill.name} as a required skill.</p>
     <div class="related-grid">${jobs.map(jobRowMini).join('') || '<div class="empty"><div class="e-icon">📭</div><h3>No jobs currently require this skill</h3></div>'}</div>
   </div>`;
-  const desc = truncateDescription(`Browse ${jobs.length} remote jobs requiring ${skill.name}. Updated hourly on JobNova.`);
+  const desc = truncateDescription(`Browse ${jobs.length} remote jobs requiring ${skill.name}. Updated hourly on JobForion.`);
   const schema = ldJsonTag(itemListSchema(jobs.slice(0, 20).map(j => ({ url: `${base}/job/${j.id}` }))));
-  return baseLayout(`Remote ${skill.name} Jobs — JobNova`, desc, `${base}/skills/${slug}`, '', content, schema + bcSchema);
+  return baseLayout(`Remote ${skill.name} Jobs — JobForion`, desc, `${base}/skills/${slug}`, '', content, schema + bcSchema);
 }
 
 // ── /search/:query — indexable only when it returns real content ──
@@ -114,11 +114,11 @@ export async function renderSearchPage(env, base, query) {
     <div class="related-grid">${(results || []).map(jobRowMini).join('') || `<div class="empty"><div class="e-icon">🔍</div><h3>No matches for "${q}"</h3><p>Try browsing <a href="/categories" style="color:var(--brand)">categories</a> instead.</p></div>`}</div>
   </div>`;
   const desc = hasResults
-    ? truncateDescription(`${results.length} remote "${q}" jobs available now. Browse and apply directly on JobNova.`)
-    : `No current openings match "${q}" — browse all remote job categories on JobNova.`;
+    ? truncateDescription(`${results.length} remote "${q}" jobs available now. Browse and apply directly on JobForion.`)
+    : `No current openings match "${q}" — browse all remote job categories on JobForion.`;
   const schema = hasResults ? ldJsonTag(itemListSchema(results.slice(0, 20).map(j => ({ url: `${base}/job/${j.id}` })))) : '';
   // thin/empty search pages are noindexed to avoid low-quality-page SEO penalties
   const robots = hasResults ? 'index, follow' : 'noindex, follow';
-  return baseLayout(`Remote "${q}" Jobs — JobNova`, desc, `${base}/search/${encodeURIComponent(q)}`, '', content, schema + bcSchema, robots);
+  return baseLayout(`Remote "${q}" Jobs — JobForion`, desc, `${base}/search/${encodeURIComponent(q)}`, '', content, schema + bcSchema, robots);
 }
 

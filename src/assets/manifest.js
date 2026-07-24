@@ -1,8 +1,8 @@
 // src/assets/manifest.js
 export function manifestJson(base) {
   return JSON.stringify({
-    name: "JobNova — Remote Jobs",
-    short_name: "JobNova",
+    name: "JobForion — Remote Jobs",
+    short_name: "JobForion",
     description: "Curated remote job board updated hourly.",
     start_url: "/",
     display: "standalone",

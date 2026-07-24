@@ -1,10 +1,10 @@
-# JobNova — Cloudflare Worker (Remote Job Board)
+# JobForion — Cloudflare Worker (Remote Job Board)
 ..........
 
 ## هيكل المشروع (احترافي، مفصول بالكامل، قابل للتوسع)
 
 ```
-jobnova/
+jobforion/
 ├── wrangler.toml                    # main = "src/index.js"
 ├── package.json
 ├── .github/workflows/deploy.yml     # نشر تلقائي عند push إلى main
@@ -163,7 +163,7 @@ wrangler secret put ADMIN_PASSWORD
 ### ج) النشر:
 ```bash
 git add -A
-git commit -m "JobNova: multi-provider sync + shared ad-slot component"
+git commit -m "JobForion: multi-provider sync + shared ad-slot component"
 git push origin main
 ```
 
@@ -181,7 +181,7 @@ Cloudflare Wrangler يجمّع (bundle) كل ملفات `src/**/*.js` المست
 
 - `/sitemap.xml` → يحتوي `/companies/...`, `/skills/...`, `/categories/...`، ويبدأ بالحرف الأول
   بـ `<?xml` مباشرة بدون أي حرف أو مسافة قبله (شرط أساسي لقبول محركات البحث له)
-- `/robots.txt` → يحتوي `Sitemap: <رابط sitemap.xml الكامل>`
+- `/robots.txt` → يحتوي `Sitemap: https://jobforion.manasa.workers.dev/sitemap.xml`
 - `/companies`, `/categories`, `/skills`, `/search/python` → 200 بدون خطأ
 - `/job/123` → اسم الشركة، المهارات، والتصنيف روابط قابلة للنقر
 - `/admin` بدون كوكي → نموذج تسجيل الدخول (وليس لوحة التحكم)

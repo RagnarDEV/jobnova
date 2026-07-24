@@ -6,7 +6,7 @@ export function footerHtml(base) {
   <div class="sf-inner">
     <div class="sf-top">
       <div>
-        <div class="sf-brand"><img src="/favicon.svg" alt="JobNova">JobNova</div>
+        <div class="sf-brand"><img src="/favicon.svg" alt="JobForion">JobForion</div>
         <p class="sf-desc">The curated platform for finding verified remote jobs and hiring remote talent — in development, design, marketing, data and more.</p>
         <div class="sf-social">
           <a href="#" aria-label="LinkedIn"><svg viewBox="0 0 24 24"><path d="M20.4 20.4h-3.5v-5.6c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.7H9.4V9h3.4v1.6h.1c.5-.9 1.6-1.9 3.4-1.9 3.6 0 4.3 2.4 4.3 5.5v6.2zM5.3 7.4a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM7 20.4H3.6V9H7v11.4z"/></svg></a>
@@ -37,7 +37,7 @@ export function footerHtml(base) {
       </div>
     </div>
     <div class="sf-bottom">
-      <span>© 2026 JobNova. All rights reserved.</span>
+      <span>© 2026 JobForion. All rights reserved.</span>
       <span>Made for the remote-first workforce 🌍</span>
     </div>
   </div>

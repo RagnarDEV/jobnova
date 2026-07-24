@@ -163,7 +163,7 @@ export async function renderDashboardContent(env) {
     <div class="adm-hdr">
       <div>
         <div class="adm-title">📊 Dashboard</div>
-        <div class="adm-sub">Live overview of JobNova performance</div>
+        <div class="adm-sub">Live overview of JobForion performance</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <form method="POST" action="/api/sync" onsubmit="return confirm('Run job sync now?')" style="display:inline">

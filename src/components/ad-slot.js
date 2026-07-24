@@ -1,5 +1,5 @@
 // src/components/ad-slot.js
-// Single source of truth for every advertisement placement on JobNova.
+// Single source of truth for every advertisement placement on JobForion.
 // Every page imports adSlot(id) and drops it wherever an ad belongs — the
 // actual ad network embed code (Adsterra or any future network) is edited
 // in ONE place, the ADS map below, instead of hunting through five

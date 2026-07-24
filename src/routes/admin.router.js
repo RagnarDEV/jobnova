@@ -21,7 +21,7 @@ function errorPage(err) {
   const msg = (err && err.message ? err.message : String(err)).replace(/</g, '&lt;');
   return new Response(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Error — JobNova</title><meta name="robots" content="noindex, nofollow">
+<title>Admin Error — JobForion</title><meta name="robots" content="noindex, nofollow">
 <style>
 body{font-family:-apple-system,sans-serif;background:#03060F;color:#E8F0FF;padding:40px 20px;max-width:640px;margin:0 auto;line-height:1.6}
 .box{background:#111F35;border:1px solid #1E3352;border-radius:14px;padding:26px}

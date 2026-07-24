@@ -1,4 +1,4 @@
-name: Deploy JobNova to Cloudflare Workers
+name: Deploy JobForion to Cloudflare Workers
 
 on:
   push:
